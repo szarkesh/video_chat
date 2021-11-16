@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.spatial import Delaunay
+import cv2
+import time
 import scipy
 from scipy import signal
 from PIL import Image
@@ -175,22 +177,19 @@ Function - Do Not Modify
 '''
 
 
-def ImageMorphingTriangulation(im1, im2, im1_pts, im2_pts, warp_frac, dissolve_frac):
+def ImageMorphingTriangulation(full_im1, full_im2, full_im1_pts, full_im2_pts, warp_frac, dissolve_frac):
     """
-    INPUT
-    im1: H×W×3 numpy array representing the first image.
-    im2: H×W×3 matrix representing the second image.
-    im1_pts: N×2 matrix representing correspondences in the first image.
-    im2_pts: N×2 matrix representing correspondences in the second image.
-    warp_frac: 1×M vector representing each frame’s shape warping parameter.
-    dissolve_frac: 1×M vector representing each frame’s cross-dissolve parameter.
-
-    OUTPUT
-    H×W×3 numpy array representing the morphed image
-
-    Tips: Read about Delaunay function from scipy.spatial and see how you could
-    use it here
+    warps image 1 based on image 2's points. usually warp frac is 1 and dissolve frac is 0
     """
+
+    im1bounds = [(min(full_im1_pts[:,0]), max(full_im1_pts[:,0])), (min(full_im1_pts[:,1]), max(full_im1_pts[:,1]))]
+    im2bounds = [(min(full_im2_pts[:, 0]), max(full_im2_pts[:, 0])), (min(full_im2_pts[:, 1]), max(full_im2_pts[:, 1]))]
+
+    im1 = full_im1[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]]
+    im2 = full_im2[im2bounds[1][0]:im2bounds[1][1], im2bounds[0][0]:im2bounds[0][1]]
+
+    im1_pts = np.subtract(full_im1_pts, [im1bounds[0][0],im1bounds[1][0]])
+    im2_pts = np.subtract(full_im2_pts, [im2bounds[0][0],im2bounds[1][0]])
 
     # Compute the H,W of the images (same size)
     im1_pts = np.vstack((im1_pts, np.asarray([[0,0], [0, im1.shape[0]], [im1.shape[1], 0], [im1.shape[1],im1.shape[0]]])))
@@ -231,4 +230,9 @@ def ImageMorphingTriangulation(im1, im2, im1_pts, im2_pts, warp_frac, dissolve_f
     # imgs.save('face_morph.png')
     #
     # files.download('face_morph.png')
-    return dissolved_pic
+
+    dissolved_full = np.copy(full_im1)
+    dissolved_full[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]] = dissolved_pic
+    cv2.imshow('1', dissolved_full)
+    cv2.imshow('2', full_im2)
+    return None
