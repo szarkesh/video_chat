@@ -1,6 +1,12 @@
 import pickle
+from time import time
 import morph
 import cv2
+import dlib
+import cProfile
+import re
+
+from getfaceshape import getFramePoints, getPoints
 
 
 def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
@@ -35,13 +41,14 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
     return resized
 
 def main():
+    start = time()
+    srcFile = "lower.mp4"
 
-    srcFile = "example.mov"
-
-    src_pts = pickle.load(open("facepts/" + srcFile.split(".")[0] + ".pkl", "rb"))
+    #src_pts = pickle.load(open("facepts/" + srcFile.split(".")[0] + ".pkl", "rb"))
+    src_pts = []
 
     cap = cv2.VideoCapture('videos/' + srcFile)
-
+    
     frameIdx = 0
     samplingRate = 60 # sample every x frames
     lastGoodFrame = None
@@ -52,21 +59,22 @@ def main():
     cv2.moveWindow('1', -200, 0)
     cv2.moveWindow('2', 600, 0)
 
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     while (cap.isOpened()):
-
         # Capture frame-by-frame
         ret, frame = cap.read()
         #frame = image_resize(frame, width=300)
         if ret == True:
-
+            src_pts.append(getFramePoints(detector, predictor, frame))
             if frameIdx % samplingRate == 0:
                 lastGoodFrame = frame
                 lastGoodFramePoints = src_pts[frameIdx]
             # Display the resulting frame
 
-            for point in src_pts[frameIdx]:
-                cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
-            morph.ImageMorphingTriangulation(lastGoodFrame, frame, lastGoodFramePoints, src_pts[frameIdx], 1, 0)
+            #for point in src_pts[frameIdx]:
+                #cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
+            morph.ImageMorphingTriangulation(lastGoodFrame, frame, lastGoodFramePoints, src_pts[frameIdx], 0.7, 0)
 
             frameIdx += 1
             # Press Q on keyboard to  exit
@@ -76,5 +84,9 @@ def main():
         # Break the loop
         else:
             break
+    
+    end = time()
+    print((end - start)/1000)
 if (__name__ == "__main__"):
-    main()
+    cProfile.run("main")
+    #main()
