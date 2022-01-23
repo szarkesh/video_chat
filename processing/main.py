@@ -5,11 +5,12 @@ import cv2
 import dlib
 import cProfile
 import re
+import numpy as np
 
-from getfaceshape import getFramePoints, getPoints
+from getfaceshape import getFrameInfo, getPoints
 
 
-def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
+def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
     # initialize the dimensions of the image to be resized and
     # grab the image size
     dim = None
@@ -35,58 +36,70 @@ def image_resize(image, width = None, height = None, inter = cv2.INTER_AREA):
         dim = (width, int(h * r))
 
     # resize the image
-    resized = cv2.resize(image, dim, interpolation = inter)
+    resized = cv2.resize(image, dim, interpolation=inter)
 
     # return the resized image
     return resized
+
 
 def main():
     start = time()
     srcFile = "lower.mp4"
 
-    #src_pts = pickle.load(open("facepts/" + srcFile.split(".")[0] + ".pkl", "rb"))
+    # src_pts = pickle.load(open("facepts/" + srcFile.split(".")[0] + ".pkl", "rb"))
     src_pts = []
 
-    cap = cv2.VideoCapture('videos/' + srcFile)
-    
+    cap = cv2.VideoCapture("videos/" + srcFile)
+
     frameIdx = 0
-    samplingRate = 60 # sample every x frames
+    samplingRate = 60  # sample every x frames
     lastGoodFrame = None
     lastGoodFramePoints = None
 
-    cv2.namedWindow('1', cv2.WINDOW_AUTOSIZE)
-    cv2.namedWindow('2', cv2.WINDOW_AUTOSIZE)
-    cv2.moveWindow('1', -200, 0)
-    cv2.moveWindow('2', 600, 0)
+    cv2.namedWindow("1", cv2.WINDOW_AUTOSIZE)
+    cv2.namedWindow("2", cv2.WINDOW_AUTOSIZE)
+    cv2.moveWindow("1", -200, 0)
+    cv2.moveWindow("2", 600, 0)
 
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
-    while (cap.isOpened()):
+    while cap.isOpened():
         # Capture frame-by-frame
         ret, frame = cap.read()
-        #frame = image_resize(frame, width=300)
+        # frame = image_resize(frame, width=300)
         if ret == True:
-            src_pts.append(getFramePoints(detector, predictor, frame))
+            # append local context of frame instead
+            points, bound_box = getFrameInfo(detector, predictor, frame)
+            src_pts.append(points)
             if frameIdx % samplingRate == 0:
-                lastGoodFrame = frame
-                lastGoodFramePoints = src_pts[frameIdx]
+                # only save bounding box of frame here
+                lastGoodFrame = frame[
+                    bound_box[1][0] : bound_box[1][1], bound_box[0][0] : bound_box[0][1]
+                ]
+                lastGoodFramePoints = src_pts[frameIdx] - np.array(
+                    [bound_box[0][0], bound_box[1][0]]
+                )
             # Display the resulting frame
 
-            #for point in src_pts[frameIdx]:
-                #cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
-            morph.ImageMorphingTriangulation(lastGoodFrame, frame, lastGoodFramePoints, src_pts[frameIdx], 0.7, 0)
+            # for point in src_pts[frameIdx]:
+            # cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
+            morph.ImageMorphingTriangulation(
+                frame, lastGoodFrame, src_pts[frameIdx], lastGoodFramePoints, 0.7, 0
+            )
 
             frameIdx += 1
             # Press Q on keyboard to  exit
-            if cv2.waitKey(25) & 0xFF == ord('q'):
+            if cv2.waitKey(25) & 0xFF == ord("q"):
                 break
 
         # Break the loop
         else:
             break
-    
+
     end = time()
-    print((end - start)/1000)
-if (__name__ == "__main__"):
-    cProfile.run("main")
-    #main()
+    print((end - start) / 1000)
+
+
+if __name__ == "__main__":
+    # cProfile.run("main")
+    main()

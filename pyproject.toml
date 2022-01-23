@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "video_chat"
+version = "0.1.0"
+description = ""
+authors = ["Karthik Macherla <kmacher@seas.upenn.edu>"]
+
+[tool.poetry.dependencies]
+python = ">=3.10,<3.11"
+cmake = "^3.22.1"
+numpy = "^1.22.1"
+dlib = "^19.22.1"
+pickle4 = "^0.0.1"
+opencv-python = "^4.5.5"
+imutils = "^0.5.4"
+scipy = "^1.7.3"
+Pillow = "^9.0.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

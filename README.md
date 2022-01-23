@@ -1,4 +1,13 @@
-### Project Setup
+### Project Setup (Mac)
+1. Install `python3`, `CMake` and `poetry`
+  - `brew install python3 cmake poetry`
+2. Install packages local to project
+  - `poetry install`
+3. To run processing demo: `cd processing && poetry run python main.py`
+
+
+
+### Project Setup (Windows)
 1. Install Python
 2. Install CMake from online installer 
 3. Install Visual Studio C++ tools (compiler) & restart
