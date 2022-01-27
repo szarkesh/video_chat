@@ -2,7 +2,7 @@ import cv2, socket, pickle, os
 s=socket.socket(socket.AF_INET , socket.SOCK_DGRAM)
 s.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 10000000)
 serverip="localhost"
-serverport=307
+serverport=3100
 cap = cv2.VideoCapture(0)
 while True:
     ret,photo = cap.read()

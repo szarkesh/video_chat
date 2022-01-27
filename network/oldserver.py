@@ -1,7 +1,7 @@
 import cv2, socket, numpy, pickle, time
 s=socket.socket(socket.AF_INET , socket.SOCK_DGRAM)
 ip="localhost"
-port=307
+port=3100
 s.bind((ip,port))
 total=0
 start_time=time.time()
