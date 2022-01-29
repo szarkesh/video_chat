@@ -6,6 +6,8 @@ import uuid
 from client_wrapper import client_wrapper
 from fin_wrapper import fin_wrapper
 from helper import send
+from helper import reset
+from helper import start
 from server_recv import server_client_recv_thread_func
 
 from raw_wrapper import raw_wrapper
@@ -44,6 +46,8 @@ def main():
     capture_thread = None
     sender_thread = None
     render_thread = None
+    constructor_threads = []
+    extractor_threads = []
     print("Client Ready! [" + IP + ":" + str(PORT) + "]")
     
     # Create a TCP socket and try connecting to the server.
@@ -67,7 +71,8 @@ def main():
     # Create a thread whose job is to listen on a port for incoming messages
     client_recv_thread = threading.Thread(
         target=server_client_recv_thread_func,
-        args=(wrap, cond_filled, server_sock, server_recv_sock)
+        args=(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads,
+            server_sock, server_recv_sock)
     )
     client_recv_thread.daemon = True
     client_recv_thread.start()
@@ -141,36 +146,12 @@ def main():
                     cond_filled.release()
                     if accepted:
                         # Spawn threads for call (timing with unix stamp)
-                        print("Spawn Video Call")
-                    # start listen and capture threads
-                    #listen_thread = threading.Thread(
-                    #    target=listen_thread_func,
-                    #    args=()
-                    #)
-                    #capture_thread = threading.Thread(
-                    #    target=listen_thread_func,
-                    #    args=()
-                    #)
+                        start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads)
             except (ValueError):
                 print("Usage: call <targetip> <targetport> [freshrate] [resolution]")
             
         elif cmd in ['s', 'stop']:
-            cond_filled.acquire()
-            if wrap.calling:
-                #send message to other client to end call
-                print("Ended Call!")
-            wrap.waiting = False
-            wrap.accepted = None
-            wrap.calling = False
-            wrap.timestamp = 0
-            wrap.callid = ""
-            wrap.oppositename = ""
-            wrap.targetip = None
-            wrap.targetport = None
-            wrap.freshrate = 30
-            wrap.resolution = 480
-            wrap.oppname = ""
-            cond_filled.release()
+            reset(wrap, cond_filled, True)
             
         elif cmd in ['status']:
             cond_filled.acquire()
