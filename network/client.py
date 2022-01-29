@@ -1,236 +1,184 @@
-import readline
 import socket
-import struct
 import sys
 import threading
-import math
 from time import sleep
+import uuid
+from client_wrapper import client_wrapper
+from fin_wrapper import fin_wrapper
+from helper import send
+from server_recv import server_client_recv_thread_func
 
-class mywrapper(object):
-    def __init__(self):
-        self.calling = True
-        self.loading = True
-        self.paused = False
-        self.targetip = None
-        self.targetport = None
+from raw_wrapper import raw_wrapper
+from server_recv import server_recv_thread_func
 
-    # When it asks to read a specific size, give it that many bytes, and
-    # update our remaining data.
-    # def read(self, size):
-    #    result = self.data[:size]
-    #    self.data = self.data[size:]
-    #    self.playhead = self.playhead + (float(size) / CHUNK_SIZE)
-    #    return result
-
-def play_thread_func(wrap, cond_filled, dev):
-    cond_filled.acquire()
-    #wrap.mf = mad.MadFile(wrap)
-    cond_filled.release()
-    while True:
-        """
-        TODO
-        example usage of dev and wrap (see mp3-example.py for a full example):
-        buf = wrap.mf.read()
-        dev.play(buffer(buf), len(buf))
-        """
-        cond_filled.acquire()
-        if not wrap.playing:
-            cond_filled.release()
-            return
-        if wrap.paused:
-            sleep(0.1)
-            cond_filled.release()
-            continue
-        if wrap.data != "":
-            buf = wrap.mf.read()
-            cond_filled.release()
-            if buf is not None:
-                # print("Playing song...")
-                dev.play(buffer(buf), len(buf))
-        else:
-            cond_filled.release()
-
-
-def request_thread_func(wrap, songId, sock, cond_filled):
-    while True:
-        if (not wrap.playing):
-            return
-        if (len(wrap.data) < 50000 and wrap.loading):
-            cond_filled.acquire()
-            chunk = str(wrap.loadhead).zfill(4)
-            #print(chunk, wrap.recvhead, wrap.loadhead, wrap.playhead)
-            wrap.loadhead += 1
-            cond_filled.release()
-            header = ("0G"+songId+"0"+chunk+"00000")
-            totalSent = 0
-            while totalSent < 14:
-                bytes_sent = sock.send(header[totalSent:])
-                totalSent += bytes_sent
-        sleep(0.1)
-
+QUEUE_LENGTH = 10
+PORT = 3000
+IP = "localhost"
 
 def main():
-    if len(sys.argv) < 3:
-        print('Usage: %s <your ip> <your port>' % sys.argv[0])
+    if len(sys.argv) < 4:
+        print('Usage: %s <server ip> <server port> <your first name> <your port>' % sys.argv[0])
         sys.exit(1)
 
+    print("Starting client...")
     # Create a pseudo-file wrapper, condition variable, and socket.  These will
     # be passed to the thread we're about to create.
-    wrap = mywrapper()
+    wrap = client_wrapper()
+    wrap.name = sys.argv[3]
+    PORT = int(sys.argv[4])
+    IP = socket.gethostbyname(socket.gethostname())
+    recv_raw_wrap = raw_wrapper()
+    recv_fin_wrap = fin_wrapper()
+    send_raw_wrap = raw_wrapper()
+    send_fin_wrap = fin_wrapper()
     # Create a condition variable to synchronize the receiver and player threads.
     # In python, this implicitly creates a mutex lock too.
     # See: https://docs.python.org/2/library/threading.html#condition-objects
     cond_filled = threading.Condition()
+    recv_raw_lock = threading.Condition()
+    recv_fin_lock = threading.Condition()
+    send_raw_lock = threading.Condition()
+    send_fin_lock = threading.Condition()
+    #query_thread = None
+    listen_thread = None
+    capture_thread = None
+    sender_thread = None
+    render_thread = None
+    print("Client Ready! [" + IP + ":" + str(PORT) + "]")
+    
     # Create a TCP socket and try connecting to the server.
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    print("Starting client...")
-    #sock.connect((sys.argv[1], int(sys.argv[2])))
-    #print("Connected!")
-
-    # Create a thread whose job is to receive messages from other clients
-    recv_thread = threading.Thread(
-        target=recv_thread_func,
-        args=(wrap, cond_filled, sock)
+    server_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    print("Connecting to server... [" + sys.argv[1] + ":" + sys.argv[2] + "]")
+    server_sock.connect((sys.argv[1], int(sys.argv[2])))
+    server_recv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    # may need to use socket.gethostname() instead of localhost once deploy to ec2
+    server_recv_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    #"localhost" if socket.gethostname() == "cis553" else socket.gethostname()
+    server_recv_sock.bind((IP, PORT))
+    server_recv_sock.listen()
+    
+    # Create a thread whose job is to receive messages from server
+    server_recv_thread = threading.Thread(
+        target=server_recv_thread_func,
+        args=(wrap, cond_filled, server_sock)
     )
-    recv_thread.daemon = True
-    recv_thread.start()
-
-    # Create a thread for video output
-    #dev = ao.AudioDevice('pulse')
-
-    # Enter our never-ending user I/O loop.  Because we imported the readline
-    # module above, raw_input gives us nice shell-like behavior (up-arrow to
-    # go backwards, etc.).
-
-    query_thread = None
-    play_thread = None
-
+    server_recv_thread.daemon = True
+    server_recv_thread.start()
+    # Create a thread whose job is to listen on a port for incoming messages
+    client_recv_thread = threading.Thread(
+        target=server_client_recv_thread_func,
+        args=(wrap, cond_filled, server_sock, server_recv_sock)
+    )
+    client_recv_thread.daemon = True
+    client_recv_thread.start()
+    print("Connected!")
+    
     while True:
-        line = raw_input('>> ')
+        line = input('>> ')
 
         if ' ' in line:
             cmd, argstring = line.split(' ', 1)
             args = argstring.split(' ')
         else:
             cmd = line
-
-        # TODO: Send messages to the server when the user types things.
-        # HEADER LENGTH = 14?
-        # [Request/Response - 1char][Request Type - 1 char][SONG ID - 2 chars]
-        # [STATUS - 1 char][Frame Number - 4 chars][Payload Length = 5 chars]
+        
         if cmd in ['c', 'call']:
-            if args.length < 3:
-                print('Usage: call <targetip> <targetport> [freshrate] [resolution]')
-            if args.length >= 3:
-                cond_filled.acquire()
-                wrap.calling = False
-                wrap.loading = False
-                wrap.targetip = str(args[1])
-                wrap.targetport = int(str(args[2]))
-                if args.length >= 4:
-                    wrap.freshrate = int(str(args[3]))
-                if args.length >= 5:
-                    wrap.resolution = int(str(args[4]))
-                cond_filled.release()
-                while (query_thread != None and query_thread.is_alive()) or (play_thread != None and play_thread.is_alive()):
-                    sleep(0.1)
-                # reset wrapper object
-                cond_filled.acquire()
-                wrap.calling = True
-                wrap.loading = True
-                cond_filled.release()                
-                
-
-        if cmd in ['p', 'play']:
-            # Begin sending chunks continuously
-            try:
-                songId = str(int(args[0])).zfill(2)
-
-                cond_filled.acquire()
-                wrap.paused = False
-                wrap.playing = False
-                cond_filled.release()
-
-                # blocking wait until query and play threads kill themselves.
-                while (query_thread != None and query_thread.is_alive()) or (play_thread != None and play_thread.is_alive()):
-                    sleep(0.1)
-
-
-                # reset wrapper object
-                cond_filled.acquire()
-                wrap.playing = True
-                wrap.loading = True
-                wrap.data = ""
-                wrap.playhead = 0
-                wrap.loadhead = 0
-                wrap.recvhead = 0
-                cond_filled.release()
-
-                # Create a thread whose job is to query the current state of the wrapper, and potentially
-                # make requests.
-
-                query_thread = threading.Thread(
-                    target=request_thread_func,
-                    args=(wrap, songId, sock, cond_filled)
-                )
-                query_thread.daemon = True
-                query_thread.start()
-
-                # Create a thread to play the audio
-
-                play_thread = threading.Thread(
-                    target=play_thread_func,
-                    args=(wrap, cond_filled, dev)
-                )
-                play_thread.daemon = True
-                play_thread.start()
-
-                # Both threads will return when the song is stopped.
-
+            try: 
+                if args.__len__() < 2:
+                    print('Usage: call <targetip> <targetport> [freshrate] [resolution]')
+                if args.__len__() >= 2:
+                    cond_filled.acquire()
+                    wrap.calling = False
+                    wrap.targetip = str(args[0])
+                    wrap.targetport = int(str(args[1]))
+                    if args.__len__() >= 3:
+                        wrap.freshrate = int(str(args[2]))
+                    if args.__len__() >= 4:
+                        wrap.resolution = int(str(args[3]))
+                    cond_filled.release()
+                    #blocking wait until threads kill themselves and reset.
+                    while (listen_thread != None and listen_thread.is_alive()) or (capture_thread != None and capture_thread.is_alive()) or (sender_thread != None and sender_thread.is_alive()) or (render_thread != None and render_thread.is_alive()):
+                        sleep(0.1) 
+                    #reset raw and fin data wrapper objects for sending and receiving (no need to lock since threads killed?)
+                    recv_raw_wrap.headframeid = 0
+                    recv_raw_wrap.tailframeid = 0
+                    recv_raw_wrap.framedata = ""
+                    recv_raw_wrap.featuredata = ""
+                    send_raw_wrap.headframeid = 0
+                    send_raw_wrap.tailframeid = 0
+                    send_raw_wrap.framedata = ""
+                    send_raw_wrap.featuredata = ""
+                    recv_fin_wrap.headframeid = 0
+                    recv_fin_wrap.tailframeid = 0
+                    recv_fin_wrap.framedata = ""
+                    recv_fin_wrap.featuredata = ""
+                    send_fin_wrap.headframeid = 0
+                    send_fin_wrap.tailframeid = 0
+                    send_fin_wrap.framedata = ""
+                    send_fin_wrap.featuredata = ""
+                    # ping server to initiate call
+                    cond_filled.acquire()
+                    wrap.waiting = True
+                    wrap.accepted = False
+                    wrap.calling = False
+                    call_id = uuid.uuid1().hex
+                    payload = call_id + "," + wrap.name + "," + str(IP) + "," + str(PORT) + "," + str(wrap.targetip) + "," + str(wrap.targetport)
+                    cond_filled.release()
+                    header = "0C0" + str(payload.__len__()).zfill(3)
+                    send(server_sock, header + payload)
+                    # block until response from user through server
+                    print("Calling " + str(args[0]) + ":" + str(args[1]) + " ...")
+                    print("Call ID: " + call_id + " | Waiting on response...")
+                    waiting = True
+                    while waiting:
+                        # Server Recv Thread will update wrap based on response
+                        cond_filled.acquire()
+                        waiting = wrap.waiting
+                        cond_filled.release()
+                        sleep(1)
+                    cond_filled.acquire()
+                    accepted = wrap.accepted
+                    cond_filled.release()
+                    if accepted:
+                        # Spawn threads for call (timing with unix stamp)
+                        print("Spawn Video Call")
+                    # start listen and capture threads
+                    #listen_thread = threading.Thread(
+                    #    target=listen_thread_func,
+                    #    args=()
+                    #)
+                    #capture_thread = threading.Thread(
+                    #    target=listen_thread_func,
+                    #    args=()
+                    #)
             except (ValueError):
-                print("Usage: play/p [songId]")
-
-        if cmd in ['pause']:
-            wrap.paused = True
-        
-        if cmd in ['resume']:
-            wrap.paused = False
-
-        if cmd in ['s', 'stop']:
+                print("Usage: call <targetip> <targetport> [freshrate] [resolution]")
+            
+        elif cmd in ['s', 'stop']:
             cond_filled.acquire()
-            wrap.playing = False
-            wrap.paused = False
+            if wrap.calling:
+                #send message to other client to end call
+                print("Ended Call!")
+            wrap.waiting
+            wrap.accepted = False
+            wrap.calling = False
+            cond_filled.release()
+            
+        elif cmd in ['status']:
+            cond_filled.acquire()
+            # TODO
             cond_filled.release()
 
-        if cmd in ['ff']:
-            cond_filled.acquire()
-            wrap.playhead = int(math.floor(wrap.playhead + 8))
-            wrap.loadhead = wrap.playhead
-            wrap.recvhead = wrap.loadhead
-            wrap.data = ""
-            wrap.mf = mad.MadFile(wrap)
-            cond_filled.release()
-        
-        if cmd in ['rw']:
-            cond_filled.acquire()
-            wrap.playhead = int(max(math.floor(wrap.playhead - 8), 0))
-            wrap.loadhead = wrap.playhead
-            wrap.recvhead = wrap.playhead
-            wrap.loading = True
-            wrap.data = ""
-            wrap.mf = mad.MadFile(wrap)
-            cond_filled.release()
-
-        if cmd in ['status']:
-            cond_filled.acquire()
-            print("Next chunk to be requested: ", wrap.loadhead)
-            print("Next chunk to be received: ", wrap.recvhead)
-            print("Currently playing at chunk #", round(wrap.playhead, 2))
-            cond_filled.release()
-
-        if cmd in ['quit', 'q', 'exit']:
+        elif cmd in ['quit', 'q', 'exit']:
             sys.exit(0)
+        elif cmd in ['h', 'help']:
+            #TODO
+            print("General Command Help:")
+            print("[c, call] - Accept call, begin video")
+            print("[r, reject] - Reject call")
+            print("[q, quit] - Exit & Shutdown client")
+        else:
+            print("Invalid command. ")
 
 
 if __name__ == '__main__':
