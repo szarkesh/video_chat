@@ -159,9 +159,17 @@ def main():
             if wrap.calling:
                 #send message to other client to end call
                 print("Ended Call!")
-            wrap.waiting
-            wrap.accepted = False
+            wrap.waiting = False
+            wrap.accepted = None
             wrap.calling = False
+            wrap.timestamp = 0
+            wrap.callid = ""
+            wrap.oppositename = ""
+            wrap.targetip = None
+            wrap.targetport = None
+            wrap.freshrate = 30
+            wrap.resolution = 480
+            wrap.oppname = ""
             cond_filled.release()
             
         elif cmd in ['status']:
@@ -174,8 +182,9 @@ def main():
         elif cmd in ['h', 'help']:
             #TODO
             print("General Command Help:")
-            print("[c, call] - Accept call, begin video")
-            print("[r, reject] - Reject call")
+            print("[c/call <tgtip> <tgtport>] -")
+            print("[s, stop] Stop current call")
+            print("[status] - Data Dashboard")
             print("[q, quit] - Exit & Shutdown client")
         else:
             print("Invalid command. ")
