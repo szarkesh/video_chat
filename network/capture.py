@@ -1,3 +1,4 @@
+import base64
 import threading
 from client_wrapper import client_wrapper
 from raw_wrapper import raw_wrapper
@@ -7,8 +8,9 @@ import numpy as np
 
 def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, send_raw_wrap: raw_wrapper, send_raw_lock: threading.Condition):
     count = 0
-    cap = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
+    #cap = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
     cond_filled.acquire()
+    cap = cv2.VideoCapture("../processing/videos/" + ("lower.mp4" if int(wrap.targetport) == 3001 else "lowercopy.mp4"))
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, wrap.resolution)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 680 if wrap.resolution == 480 else (wrap.resolution * 16 / 9))
     cond_filled.release()
@@ -24,10 +26,16 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
             count = 0
         ret, frame = cap.read()
         # if frame is read correctly ret is True
+        
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
-        f = Frame(frame.tobytes(), fid, True)
+        #print(type(frame))
+        encoded, buffer = cv2.imencode('.jpg', frame)
+        #print(type(data))
+        data = base64.b64encode(buffer)
+        f = Frame(data, fid, True)
+        #print("captured frame ID: " + str(fid) + " ~ " + str(data)[1:5] + " | len: " + str(len(data)))
         send_raw_lock.acquire()
         send_raw_wrap.framedata.append(f)
         send_raw_lock.release()

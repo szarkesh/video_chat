@@ -9,20 +9,44 @@ from extractor import extractor_thread_func
 from render import render_thread_func
 from sender import sender_thread_func
 
-def send(socket: socket, data: str):
+def send(socket: socket, data):
     totalSent = 0
     while totalSent < len(data):
-        sent = socket.send(data[totalSent:].encode('utf-8'))
+        message = data[totalSent:].encode('utf-8') if type(data) == str else data[totalSent:]
+        sent = socket.send(message)
         if sent == 0:
             print("Lost connection, retrying...")
         totalSent += sent
         #print(str(totalSent) + "/" + str(len(data)))
-        
+      
+def datsend(socket: socket, data):
+    totalSent = 0
+    while totalSent < len(data):
+        message = data[totalSent:]
+        sent = socket.send(message)
+        if sent == 0:
+            print("Lost connection, retrying...")
+        totalSent += sent
+        print(str(totalSent) + "/" + str(len(data)))
+       
 def receive(sock: socket, data, length: int):
     data = sock.recv(length).decode("utf-8")
+    print(str(len(data)) + " / " + str(length))
+    print(data)
     while (len(data) < length):
         data += sock.recv(length - len(data)).decode('utf-8')
+        print(str(len(data)) + " / " + str(length))
+        print(data)
      
+def datreceive(sock: socket, data, length: int):
+    data = sock.recv(length)
+    print(str(len(data)) + " / " + str(length))
+    print(data)
+    while (len(data) < length):
+        data += sock.recv(length - len(data))
+        print(str(len(data)) + " / " + str(length))
+        print(data)
+
 def start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads):
     print("Spawning Video Call Threads...")
     listen_thread = threading.Thread(
@@ -57,7 +81,7 @@ def start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wr
     constructor_threads[0].start()
     extractor_threads.append(threading.Thread(
         target=extractor_thread_func,
-        args=(wrap, cond_filled, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock)
+        args=(wrap, cond_filled, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock)
     ))
     extractor_threads[0].daemon = True
     extractor_threads[0].start()

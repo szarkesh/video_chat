@@ -107,20 +107,20 @@ def main():
                     #reset raw and fin data wrapper objects for sending and receiving (no need to lock since threads killed?)
                     recv_raw_wrap.headframeid = 0
                     recv_raw_wrap.tailframeid = 0
-                    recv_raw_wrap.framedata = ""
-                    recv_raw_wrap.featuredata = ""
+                    recv_raw_wrap.framedata = []
+                    recv_raw_wrap.featuredata = []
                     send_raw_wrap.headframeid = 0
                     send_raw_wrap.tailframeid = 0
-                    send_raw_wrap.framedata = ""
-                    send_raw_wrap.featuredata = ""
+                    send_raw_wrap.framedata = []
+                    send_raw_wrap.featuredata = []
                     recv_fin_wrap.headframeid = 0
                     recv_fin_wrap.tailframeid = 0
-                    recv_fin_wrap.framedata = ""
-                    recv_fin_wrap.featuredata = ""
+                    recv_fin_wrap.framedata = []
+                    recv_fin_wrap.featuredata = []
                     send_fin_wrap.headframeid = 0
                     send_fin_wrap.tailframeid = 0
-                    send_fin_wrap.framedata = ""
-                    send_fin_wrap.featuredata = ""
+                    send_fin_wrap.framedata = []
+                    send_fin_wrap.featuredata = []
                     # ping server to initiate call
                     cond_filled.acquire()
                     wrap.waiting = True
