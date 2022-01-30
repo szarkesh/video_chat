@@ -1,8 +1,10 @@
 import threading
+from time import sleep
 from client_wrapper import client_wrapper
 from fin_wrapper import fin_wrapper
 import cv2
 import numpy as np
+import pickle
 
 def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition):
     print("Creating Window...")
@@ -13,6 +15,7 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
     cond_filled.release()
     count = 0
     while True:
+        sleep(5)
         print("Waiting to render...")
         count += 1
         if count > 10000:
@@ -26,11 +29,14 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
         length = len(recv_fin_wrap.framedata)
         print(str(length) + " frames ready")
         recv_fin_lock.release()
-        if length > 0:            
+        if length > 0:
+            recv_fin_lock.acquire()            
             f = recv_fin_wrap.framedata.pop(0)
-            print("Rendering: " + str(f.fid))
-            nparr = np.fromstring(f.data, dtype=np.uint8)
-            frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            recv_fin_lock.release()
+            print("Rendering FID: " + str(f.fid))
+            #nparr = np.fromstring(f.data, dtype=np.uint8)
+            #frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+            frame = pickle.loads(f.data)
             cv2.imshow(windname, frame)
             cv2.waitKey(0)
             print("rendered frame: " + str(f.fid))

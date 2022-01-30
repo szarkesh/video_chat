@@ -8,7 +8,7 @@ from frame import Frame
 from raw_wrapper import raw_wrapper
 import helper
 
-HDRLEN = 20
+HDRLEN = 25
 
 def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, recv_raw_wrap: raw_wrapper, recv_raw_lock: threading.Condition, IP: str, PORT: int):
         count = 0
@@ -25,7 +25,7 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
         (s, address) = sock.accept()
         print("Connection Established: " + str(address)) 
         while True:
-            sleep(1)
+            sleep(5)
             count += 1
             if count > 10000:
                 cond_filled.acquire()
@@ -45,16 +45,17 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
                 status = int(header[2])
                 fid = int(header[3:10])
                 cnum = int(header[10:15])
-                length = int(header[15:20])
+                length = int(header[15:25])
                 if (status != 0):
                     print("Error Status: " + str(status))
-                payload = ""
-                helper.datreceive(s, payload, length)
-                print(payload[1:5])
+                payload = b''
+                while (len(payload) < length):
+                    payload += s.recv(length - len(payload))
+                    print(str(len(payload)) + " / " + str(length))
                 if type == "F":
                     # Received frame
-                    data = base64.b64decode(payload)
-                    frame = Frame(data, fid, True)
+                    #data = base64.b64decode(payload)
+                    frame = Frame(payload, fid, True)
                     recv_raw_lock.acquire()
                     recv_raw_wrap.framedata.append(frame)
                     recv_raw_lock.release()

@@ -5,6 +5,7 @@ from raw_wrapper import raw_wrapper
 from frame import Frame
 import cv2
 import numpy as np
+import pickle
 
 def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, send_raw_wrap: raw_wrapper, send_raw_lock: threading.Condition):
     count = 0
@@ -31,9 +32,10 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
             print("Can't receive frame (stream end?). Exiting ...")
             break
         #print(type(frame))
-        encoded, buffer = cv2.imencode('.jpg', frame)
+        #encoded, buffer = cv2.imencode('.jpg', frame)
         #print(type(data))
-        data = base64.b64encode(buffer)
+        #data = base64.b64encode(buffer)
+        data = pickle.dumps(frame, 0)
         f = Frame(data, fid, True)
         #print("captured frame ID: " + str(fid) + " ~ " + str(data)[1:5] + " | len: " + str(len(data)))
         send_raw_lock.acquire()

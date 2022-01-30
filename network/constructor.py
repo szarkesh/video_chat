@@ -1,4 +1,5 @@
 import threading
+from time import sleep
 from client_wrapper import client_wrapper 
 from raw_wrapper import raw_wrapper
 from fin_wrapper import fin_wrapper
@@ -14,7 +15,7 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
         #        break
         #    cond_filled.release()
         #    count = 0
-        
+        sleep(5)
         recv_raw_lock.acquire()
         length = len(recv_raw_wrap.framedata)
         print("Constructing... " + str(length))
