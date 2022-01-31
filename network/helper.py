@@ -10,9 +10,9 @@ from render import render_thread_func
 from sender import sender_thread_func
 import helper
 
-SLEEP = 0.01
+SLEEP = 0.005
 PRINT = False
-CHECK = 100
+CHECK = 1000
 
 def cprint(message: str):
     if PRINT:

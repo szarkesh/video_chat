@@ -1,5 +1,5 @@
 import threading
-from time import sleep
+from time import sleep, time
 from client_wrapper import client_wrapper
 from fin_wrapper import fin_wrapper
 import cv2
@@ -15,6 +15,10 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
     cv2.resizeWindow(windname, 680 if wrap.resolution == 480 else (wrap.resolution * 16 / 9), wrap.resolution)
     cond_filled.release()
     count = 0
+    prev_frame_time = 0
+    new_frame_time = 0
+    start_time = 0
+    started = False
     while True:
         sleep(helper.SLEEP)
         helper.cprint("Waiting to render...")
@@ -44,7 +48,13 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
             #frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             frame = pickle.loads(f.data)
             points = pickle.loads(pts.data)
-            image = cv2.putText(frame, "Frame: " + str(f.fid), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+            new_frame_time = time()
+            fps = str(int(1 / (new_frame_time - prev_frame_time)))
+            prev_frame_time = new_frame_time
+            if not started:
+                start_time = time()
+                started = True
+            image = cv2.putText(frame, "FID: " + str(f.fid) + " FPS: " + fps + " TIME: " + str(time() - start_time), (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1, cv2.LINE_AA)
             for point in points:
                 cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
             cv2.imshow(windname, image)
