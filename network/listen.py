@@ -25,7 +25,7 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
         (s, address) = sock.accept()
         print("Connection Established: " + str(address)) 
         while True:
-            sleep(5)
+            sleep(helper.SLEEP)
             count += 1
             if count > 10000:
                 cond_filled.acquire()
@@ -34,12 +34,12 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
                     break
                 cond_filled.release()
                 count = 0
-            print("Receiving ")
+            helper.cprint("Receiving ")
             header = ""
             while (len(header) < HDRLEN):
                 header += s.recv(HDRLEN - len(header)).decode('utf-8')
-                print(str(len(header)) + " / " + str(HDRLEN))
-            print(header)
+                helper.cprint(str(len(header)) + " / " + str(HDRLEN))
+            helper.cprint(header)
             if len(header) > 0:
                 type = header[1]
                 status = int(header[2])
@@ -51,7 +51,7 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
                 payload = b''
                 while (len(payload) < length):
                     payload += s.recv(length - len(payload))
-                    print(str(len(payload)) + " / " + str(length))
+                    helper.cprint(str(len(payload)) + " / " + str(length))
                 if type == "F":
                     # Received frame
                     #data = base64.b64decode(payload)
@@ -59,7 +59,7 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
                     recv_raw_lock.acquire()
                     recv_raw_wrap.framedata.append(frame)
                     recv_raw_lock.release()
-                    print("listened frame: " + str(frame.fid))
+                    helper.cprint("listened frame: " + str(frame.fid))
                 elif type == "D":
                     # Received feature data
                     print("Data Features")

@@ -9,6 +9,13 @@ from extractor import extractor_thread_func
 from render import render_thread_func
 from sender import sender_thread_func
 
+SLEEP = 0.01
+PRINT = False
+
+def cprint(message: str):
+    if PRINT:
+        print(message)
+
 def send(socket: socket, data):
     totalSent = 0
     while totalSent < len(data):
@@ -27,25 +34,25 @@ def datsend(socket: socket, data):
         if sent == 0:
             print("Lost connection, retrying...")
         totalSent += sent
-        print(str(totalSent) + "/" + str(len(data)))
+        #print(str(totalSent) + "/" + str(len(data)))
        
 def receive(sock: socket, data, length: int):
     data = sock.recv(length).decode("utf-8")
-    print(str(len(data)) + " / " + str(length))
-    print(data)
+    cprint(str(len(data)) + " / " + str(length))
+    cprint(data)
     while (len(data) < length):
         data += sock.recv(length - len(data)).decode('utf-8')
-        print(str(len(data)) + " / " + str(length))
-        print(data)
+        cprint(str(len(data)) + " / " + str(length))
+        cprint(data)
      
 def datreceive(sock: socket, data, length: int):
     data = sock.recv(length)
-    print(str(len(data)) + " / " + str(length))
-    print(data)
+    cprint(str(len(data)) + " / " + str(length))
+    cprint(data)
     while (len(data) < length):
         data += sock.recv(length - len(data))
-        print(str(len(data)) + " / " + str(length))
-        print(data)
+        cprint(str(len(data)) + " / " + str(length))
+        cprint(data)
 
 def start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads):
     print("Spawning Video Call Threads...")

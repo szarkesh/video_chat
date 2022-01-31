@@ -1,11 +1,13 @@
 import base64
 import threading
+from time import sleep
 from client_wrapper import client_wrapper
 from raw_wrapper import raw_wrapper
 from frame import Frame
 import cv2
 import numpy as np
 import pickle
+import helper
 
 def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, send_raw_wrap: raw_wrapper, send_raw_lock: threading.Condition):
     count = 0
@@ -17,6 +19,7 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
     cond_filled.release()
     fid = 0
     while True:
+        sleep(helper.SLEEP)
         count += 1
         if count > 10000:
             cond_filled.acquire()
