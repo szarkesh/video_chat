@@ -80,7 +80,6 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         helper.cprint(str(len(payload)) + " / " + str(length))
                     if type == "F":
                         # Received frame
-                        #data = base64.b64decode(payload)
                         frame = Frame(payload, fid, True)
                         recv_raw_lock.acquire()
                         recv_raw_wrap.framedata.append(frame)
@@ -88,7 +87,11 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         helper.cprint("listened frame: " + str(frame.fid))
                     elif type == "D":
                         # Received feature data
-                        print("Data Features")
+                        frame = Frame(payload, fid, True)
+                        recv_raw_lock.acquire()
+                        recv_raw_wrap.featuredata.append(frame)
+                        recv_raw_lock.release()
+                        helper.cprint("listened feature data: " + str(frame.fid))
                     elif type == "E":
                         # Received end call
                         cond_filled.acquire()

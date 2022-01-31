@@ -38,14 +38,18 @@ def sender_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, s
                 header = ("0F0" + str(f.fid).zfill(7) + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
                 helper.cprint("sending frame id: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
                 helper.datsend(sock, header+payload)
-                send_fin_lock.acquire()
-            #if len(send_fin_wrap.featuredata) > 0:
-                #f = send_fin_wrap.featuredata.pop(0)
-                #send_fin_lock.release()
-                #payload = ???
-                #header = "0F0" + str(f.fid).zfill(7) + '00000' + str(len(payload)).zfill(5)
-                #send(sock, header+payload)
-            send_fin_lock.release()
+            else:
+                send_fin_lock.release()
+            send_fin_lock.acquire()
+            if len(send_fin_wrap.featuredata) > 0:
+                f = send_fin_wrap.featuredata.pop(0)
+                send_fin_lock.release()
+                payload = f.data
+                header = "0D0" + str(f.fid).zfill(7) + '00000' + str(len(payload)).zfill(10).encode('utf-8')
+                helper.cprint("sending feature data id: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
+                helper.datsend(sock, header+payload)
+            else:
+                send_fin_lock.release()
     except:
         print("Sender Error (Sender thread stopped...)")
     

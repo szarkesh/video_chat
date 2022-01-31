@@ -29,18 +29,23 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
             cond_filled.release()
             count = 0
         recv_fin_lock.acquire()
-        length = len(recv_fin_wrap.framedata)
-        helper.cprint(str(length) + " frames ready")
+        framelength = len(recv_fin_wrap.framedata)
+        helper.cprint(str(framelength) + " frames ready")
+        datalength = len(recv_fin_wrap.featuredata)
+        helper.cprint(str(datalength) + " data frames ready")
         recv_fin_lock.release()
-        if length > 0:
+        if framelength > 0 and datalength > 0:
             recv_fin_lock.acquire()            
             f = recv_fin_wrap.framedata.pop(0)
+            pts = recv_fin_wrap.featuredata.pop(0)
             recv_fin_lock.release()
             helper.cprint("Rendering FID: " + str(f.fid))
             #nparr = np.fromstring(f.data, dtype=np.uint8)
             #frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             frame = pickle.loads(f.data)
             image = cv2.putText(frame, "Frame: " + str(f.fid), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
+            for point in pts:
+                cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
             cv2.imshow(windname, image)
             #cv2.waitKey(0)
             cv2.waitKey(25)
