@@ -16,40 +16,40 @@ def sender_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, s
     print("connecting to " + wrap.targetip + ":" + "400" + str(wrap.targetport)[3])
     sock.connect((wrap.targetip, int("400" + str(wrap.targetport)[3])))
     cond_filled.release()
-    try:
-        while True:
-            sleep(helper.SLEEP)
-            count += 1
-            if count > int(helper.CHECK):
-                cond_filled.acquire()
-                if not wrap.calling:
-                    cond_filled.release()
-                    print("Sending End Call Message...")
-                    helper.send(sock, "0E0" + "0000000" + "00000" + "0000000000")
-                    print("Stopping sender thread...")
-                    break
+    #try:
+    while True:
+        sleep(helper.SLEEP)
+        count += 1
+        if count > int(helper.CHECK):
+            cond_filled.acquire()
+            if not wrap.calling:
                 cond_filled.release()
-                count = 0
-            send_fin_lock.acquire()
-            if len(send_fin_wrap.framedata) > 0:
-                f = send_fin_wrap.framedata.pop(0)
-                send_fin_lock.release()
-                payload = f.data
-                header = ("0F0" + str(f.fid).zfill(7) + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
-                helper.cprint("sending frame id: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
-                helper.datsend(sock, header+payload)
-            else:
-                send_fin_lock.release()
-            send_fin_lock.acquire()
-            if len(send_fin_wrap.featuredata) > 0:
-                f = send_fin_wrap.featuredata.pop(0)
-                send_fin_lock.release()
-                payload = f.data
-                header = "0D0" + str(f.fid).zfill(7) + '00000' + str(len(payload)).zfill(10).encode('utf-8')
-                helper.cprint("sending feature data id: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
-                helper.datsend(sock, header+payload)
-            else:
-                send_fin_lock.release()
-    except:
-        print("Sender Error (Sender thread stopped...)")
+                print("Sending End Call Message...")
+                helper.send(sock, "0E0" + "0000000" + "00000" + "0000000000")
+                print("Stopping sender thread...")
+                break
+            cond_filled.release()
+            count = 0
+        send_fin_lock.acquire()
+        if len(send_fin_wrap.framedata) > 0:
+            f = send_fin_wrap.framedata.pop(0)
+            send_fin_lock.release()
+            payload = f.data
+            header = ("0F0" + str(f.fid).zfill(7) + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
+            helper.cprint("sending frame id: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
+            helper.datsend(sock, header+payload)
+        else:
+            send_fin_lock.release()
+        send_fin_lock.acquire()
+        if len(send_fin_wrap.featuredata) > 0:
+            f = send_fin_wrap.featuredata.pop(0)
+            send_fin_lock.release()
+            payload = f.data
+            header = ("0D0" + str(f.fid).zfill(7) + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
+            helper.cprint("sending feature data id: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
+            helper.datsend(sock, header+payload)
+        else:
+            send_fin_lock.release()
+    #except:
+    #    print("Sender Error (Sender thread stopped...)")
     

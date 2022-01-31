@@ -43,8 +43,9 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
             #nparr = np.fromstring(f.data, dtype=np.uint8)
             #frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             frame = pickle.loads(f.data)
+            points = pickle.loads(pts.data)
             image = cv2.putText(frame, "Frame: " + str(f.fid), (0, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA)
-            for point in pts:
+            for point in points:
                 cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
             cv2.imshow(windname, image)
             #cv2.waitKey(0)

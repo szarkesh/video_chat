@@ -1,5 +1,6 @@
 import threading
 from time import sleep
+from frame import Frame
 from client_wrapper import client_wrapper 
 from raw_wrapper import raw_wrapper
 from fin_wrapper import fin_wrapper
@@ -32,7 +33,8 @@ def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition
             points, bound_box = getFrameInfo(detector, predictor, frame)
             send_fin_lock.acquire()
             send_fin_wrap.framedata.append(f)
-            send_fin_wrap.featuredata.append(points)
+            ptsframe = Frame(pickle.dumps(points, 0), f.fid, True)
+            send_fin_wrap.featuredata.append(ptsframe)
             send_fin_lock.release()
             helper.cprint("extracted frame: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
         else:

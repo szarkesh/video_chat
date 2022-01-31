@@ -19,19 +19,25 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
             cond_filled.release()
             count = 0
         recv_raw_lock.acquire()
-        length = len(recv_raw_wrap.framedata)
-        #helper.cprint("Constructing... " + str(length))
+        framelength = len(recv_raw_wrap.framedata)
         recv_raw_lock.release()
-        if length > 0:
+        if framelength > 0:
             recv_raw_lock.acquire()
             f = recv_raw_wrap.framedata.pop(0)
-            pts = recv_raw_wrap.featuredata.pop(0)
             recv_raw_lock.release()
             recv_fin_lock.acquire()
             recv_fin_wrap.framedata.append(f)
             helper.cprint("constructed frame: " + str(f.fid))
+            recv_fin_lock.release()
+        
+        recv_raw_lock.acquire()
+        datalength = len(recv_raw_wrap.featuredata)
+        recv_raw_lock.release()
+        if datalength > 0:
+            recv_raw_lock.acquire()
+            pts = recv_raw_wrap.featuredata.pop(0)
+            recv_raw_lock.release()
+            recv_fin_lock.acquire()
             recv_fin_wrap.featuredata.append(pts)
             helper.cprint("constructed data: " + str(pts.fid))
             recv_fin_lock.release()
-            
-        
