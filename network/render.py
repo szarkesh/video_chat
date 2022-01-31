@@ -20,7 +20,7 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
     start_time = 0
     started = False
     while True:
-        sleep(helper.SLEEP)
+        #sleep(helper.SLEEP)
         helper.cprint("Waiting to render...")
         count += 1
         if count > int(helper.CHECK):
@@ -60,5 +60,5 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
                 cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
             cv2.imshow(windname, image)
             #cv2.waitKey(0)
-            cv2.waitKey(25)
+            cv2.waitKey(50)
             helper.cprint("rendered frame: " + str(f.fid))
