@@ -56,7 +56,7 @@ Each message has a header consisting of 4 characters:
 - Status (1 character): 0 for OK, 1 for Failure (TODO: Add more error types)
 - Frame Number (7 characters): Frame Number/ID in 7 character format e.g. Frame ID 1 - '0000001', for 'E' type '0000000'
 - Chunk Number (5 characters): Chunk Number for data of frame specified by frame number in 5 character format e.g. chunk number 1 - '00001', for 'E' type '00000'
-- Payload Length (5 characters): Length of payload in five character format e.g. 1 - '00001', for 'E' type '00000'. Represents payload length in number of bytes.
+- Payload Length (10 characters): Length of payload in 10 character format e.g. 1 - '0000000001', for 'E' type '0000000000'. Represents payload length in number of bytes.
 
 ### Payload
 

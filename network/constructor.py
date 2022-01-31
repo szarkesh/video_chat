@@ -4,18 +4,20 @@ from client_wrapper import client_wrapper
 from raw_wrapper import raw_wrapper
 from fin_wrapper import fin_wrapper
 import helper
+
 def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, recv_raw_wrap: raw_wrapper, recv_raw_lock: threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition):
     count = 0
     while True:
-        #count += 1
-        #if count > 10000:
-        #    cond_filled.acquire()
-        #    if not wrap.calling:
-        #        cond_filled.release()
-        #        break
-        #    cond_filled.release()
-        #    count = 0
         sleep(helper.SLEEP)
+        count += 1
+        if count > int(helper.CHECK):
+            cond_filled.acquire()
+            if not wrap.calling:
+                cond_filled.release()
+                print("Stopping constructor thread...")
+                return
+            cond_filled.release()
+            count = 0
         recv_raw_lock.acquire()
         length = len(recv_raw_wrap.framedata)
         helper.cprint("Constructing... " + str(length))

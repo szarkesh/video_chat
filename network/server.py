@@ -61,7 +61,7 @@ def client_read(client: Client, cond_filled: threading.Condition):
                     #header = "0C0" + str(len(payload)).zfill(3)
                     send(sock, header + payload)
                     sock.close()
-                    print("Call request forwarded to " + name + " at [" + ip + ":" + port +"]")            
+                    print("Call request forwarded to " + name + " at [" + tgtip + ":" + tgtport +"]")            
                 elif header[1] == "A":
                     callid, name, ip, port, timestamp = payload.split(',')
                     print("Accept request for call: " + callid)

@@ -23,7 +23,9 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
             cond_filled.acquire()
             if not wrap.calling:
                 cond_filled.release()
-                break
+                print("Stopping render thread...")
+                cv2.destroyAllWindows()
+                return
             cond_filled.release()
             count = 0
         recv_fin_lock.acquire()

@@ -82,12 +82,14 @@ def start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wr
     )
     sender_thread.daemon = True
     sender_thread.start()
+    constructor_threads = []
     constructor_threads.append(threading.Thread(
         target=constructor_thread_func,
         args=(wrap, cond_filled, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock)
     ))
     constructor_threads[0].daemon = True
     constructor_threads[0].start()
+    extractor_threads = []
     extractor_threads.append(threading.Thread(
         target=extractor_thread_func,
         args=(wrap, cond_filled, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock)
