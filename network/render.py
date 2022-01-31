@@ -48,6 +48,7 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
             #frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
             frame = pickle.loads(f.data)
             points = pickle.loads(pts.data)
+            # Could add lengths of the 4 buffers as the status dashboard
             new_frame_time = time()
             fps = str(int(1 / (new_frame_time - prev_frame_time)))
             prev_frame_time = new_frame_time

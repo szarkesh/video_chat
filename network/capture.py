@@ -35,14 +35,17 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
         if not ret:
             print("Can't receive frame (stream end?). Exiting ...")
             break
-        #print(type(frame))
-        #encoded, buffer = cv2.imencode('.jpg', frame)
-        #print(type(data))
-        #data = base64.b64encode(buffer)
-        data = pickle.dumps(frame, 0)
-        f = Frame(data, fid, True)
-        #print("captured frame ID: " + str(fid) + " ~ " + str(data)[1:5] + " | len: " + str(len(data)))
-        send_raw_lock.acquire()
-        send_raw_wrap.framedata.append(f)
-        send_raw_lock.release()
+        
+        # Reduce Frame rate of entire video feed by skipping each nth frame
+        if fid % 2 == 0:
+            #print(type(frame))
+            #encoded, buffer = cv2.imencode('.jpg', frame)
+            #print(type(data))
+            #data = base64.b64encode(buffer)
+            data = pickle.dumps(frame, 0)
+            f = Frame(data, fid, True)
+            #print("captured frame ID: " + str(fid) + " ~ " + str(data)[1:5] + " | len: " + str(len(data)))
+            send_raw_lock.acquire()
+            send_raw_wrap.framedata.append(f)
+            send_raw_lock.release()
         fid += 1

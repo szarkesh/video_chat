@@ -14,7 +14,7 @@ def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     while True:
-        sleep(helper.SLEEP)
+        sleep(helper.SLEEP / 5)
         count += 1
         if count > helper.CHECK:
             cond_filled.acquire()

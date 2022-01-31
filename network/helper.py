@@ -10,9 +10,11 @@ from render import render_thread_func
 from sender import sender_thread_func
 import helper
 
-SLEEP = 0.005
+SLEEP = 0.002
 PRINT = False
 CHECK = 1000
+EXTRACTOR_NUM = 5
+CONSTRUCTOR_NUM = 1
 
 def cprint(message: str):
     if PRINT:
@@ -83,19 +85,21 @@ def start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wr
     sender_thread.daemon = True
     sender_thread.start()
     constructor_threads = []
-    constructor_threads.append(threading.Thread(
-        target=constructor_thread_func,
-        args=(wrap, cond_filled, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock)
-    ))
-    constructor_threads[0].daemon = True
-    constructor_threads[0].start()
+    for i in range(0, CONSTRUCTOR_NUM):
+        constructor_threads.append(threading.Thread(
+            target=constructor_thread_func,
+            args=(wrap, cond_filled, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock)
+        ))
+        constructor_threads[i].daemon = True
+        constructor_threads[i].start()
     extractor_threads = []
-    extractor_threads.append(threading.Thread(
-        target=extractor_thread_func,
-        args=(wrap, cond_filled, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock)
-    ))
-    extractor_threads[0].daemon = True
-    extractor_threads[0].start()
+    for i in range(0, EXTRACTOR_NUM):
+        extractor_threads.append(threading.Thread(
+            target=extractor_thread_func,
+            args=(wrap, cond_filled, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock)
+        ))
+        extractor_threads[i].daemon = True
+        extractor_threads[i].start()
     print("All Threads Spawned!")
    
 def reset(wrap: client_wrapper, cond_filled: threading.Condition, stopOpp: bool):
