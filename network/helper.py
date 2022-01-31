@@ -13,6 +13,7 @@ import helper
 SLEEP = 0.002
 PRINT = False
 CHECK = 1000
+SKIPN = 2
 EXTRACTOR_NUM = 5
 CONSTRUCTOR_NUM = 1
 

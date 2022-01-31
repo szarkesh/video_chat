@@ -49,13 +49,16 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
             frame = pickle.loads(f.data)
             points = pickle.loads(pts.data)
             # Could add lengths of the 4 buffers as the status dashboard
+            recv_fin_lock.acquire()
+            rdy = str(len(recv_fin_wrap.framedata))
+            recv_fin_lock.release()
             new_frame_time = time()
             fps = str(int(1 / (new_frame_time - prev_frame_time)))
             prev_frame_time = new_frame_time
             if not started:
                 start_time = time()
                 started = True
-            image = cv2.putText(frame, "FID: " + str(f.fid) + " FPS: " + fps + " TIME: " + str(time() - start_time), (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1, cv2.LINE_AA)
+            image = cv2.putText(frame, "FID: " + str(f.fid) + " FPS: " + fps + " TIME: " + str("{:.2f}".format(time() - start_time)) + " RDY: " + str(rdy), (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1, cv2.LINE_AA)
             for point in points:
                 cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
             cv2.imshow(windname, image)

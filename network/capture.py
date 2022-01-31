@@ -37,7 +37,7 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
             break
         
         # Reduce Frame rate of entire video feed by skipping each nth frame
-        if fid % 2 == 0:
+        if fid % helper.SKIPN == 0:
             #print(type(frame))
             #encoded, buffer = cv2.imencode('.jpg', frame)
             #print(type(data))

@@ -8,3 +8,5 @@ class Frame:
         self.fid = fid
         self.data = data
         
+    def __lt__(self, other):
+        return self.fid < other.fid

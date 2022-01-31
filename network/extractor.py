@@ -13,6 +13,9 @@ def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition
     count = 0
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+    cond_filled.acquire()
+    samplingrate = wrap.freshrate
+    cond_filled.release()
     while True:
         sleep(helper.SLEEP / 5)
         count += 1
@@ -31,9 +34,10 @@ def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition
             send_raw_lock.release()
             frame = pickle.loads(f.data)
             points, bound_box = getFrameInfo(detector, predictor, frame)
-            send_fin_lock.acquire()
-            send_fin_wrap.framedata.append(f)
             ptsframe = Frame(pickle.dumps(points, 0), f.fid, True)
+            send_fin_lock.acquire()
+            #if f.fid % samplingrate == 0:
+            send_fin_wrap.framedata.append(f)
             send_fin_wrap.featuredata.append(ptsframe)
             send_fin_lock.release()
             helper.cprint("extracted frame: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
