@@ -21,10 +21,11 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
     while True:
         sleep(helper.SLEEP)
         count += 1
-        if count > 10000:
+        if count > int(helper.CHECK):
             cond_filled.acquire()
             if not wrap.calling:
                 cond_filled.release()
+                print("Stopping capture thread..")
                 break
             cond_filled.release()
             count = 0

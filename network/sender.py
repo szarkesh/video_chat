@@ -19,7 +19,7 @@ def sender_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, s
     while True:
         sleep(helper.SLEEP)
         count += 1
-        if count > 10000:
+        if count > int(helper.CHECK):
             cond_filled.acquire()
             if not wrap.calling:
                 cond_filled.release()
@@ -27,6 +27,12 @@ def sender_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, s
             cond_filled.release()
             count = 0
         send_fin_lock.acquire()
+        cond_filled.acquire()
+        if not wrap.calling:
+            print("Sending End Call Message...")
+            helper.send(sock, "0E0" + "0000000" + "00000" + "0000000000")
+            break
+        cond_filled.release()
         if len(send_fin_wrap.framedata) > 0:
             f = send_fin_wrap.framedata.pop(0)
             send_fin_lock.release()

@@ -143,24 +143,25 @@ def main():
                         sleep(1)
                     cond_filled.acquire()
                     accepted = wrap.accepted
+                    wrap.calling = True
                     cond_filled.release()
                     if accepted:
                         # Spawn threads for call (timing with unix stamp)
                         start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads)
-                        while True:
-                            sleep(3)
-                            recv_raw_lock.acquire()
-                            recv_fin_lock.acquire()
-                            send_raw_lock.acquire()
-                            send_fin_lock.acquire()
-                            print("RECV RAW: " + str(len(recv_raw_wrap.framedata)))
-                            print("RECV FIN: " + str(len(recv_fin_wrap.framedata)))
-                            print("SEND RAW: " + str(len(send_raw_wrap.framedata)))
-                            print("SEND FIN: " + str(len(send_fin_wrap.framedata)))
-                            recv_raw_lock.release()
-                            recv_fin_lock.release()
-                            send_raw_lock.release()
-                            send_fin_lock.release()
+                        #while True:
+                        #    sleep(3)
+                        #    recv_raw_lock.acquire()
+                        #    recv_fin_lock.acquire()
+                        #    send_raw_lock.acquire()
+                        #    send_fin_lock.acquire()
+                        #    print("RECV RAW: " + str(len(recv_raw_wrap.framedata)))
+                        #    print("RECV FIN: " + str(len(recv_fin_wrap.framedata)))
+                        #    print("SEND RAW: " + str(len(send_raw_wrap.framedata)))
+                        #    print("SEND FIN: " + str(len(send_fin_wrap.framedata)))
+                        #    recv_raw_lock.release()
+                        #    recv_fin_lock.release()
+                        #    send_raw_lock.release()
+                        #    send_fin_lock.release()
             except (ValueError):
                 print("Usage: call <targetip> <targetport> [freshrate] [resolution]")
             

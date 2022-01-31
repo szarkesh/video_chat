@@ -27,7 +27,7 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
         while True:
             sleep(helper.SLEEP)
             count += 1
-            if count > 10000:
+            if count > helper.CHECK:
                 cond_filled.acquire()
                 if not wrap.calling:
                     cond_filled.release()

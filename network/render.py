@@ -19,7 +19,7 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
         sleep(helper.SLEEP)
         helper.cprint("Waiting to render...")
         count += 1
-        if count > 10000:
+        if count > int(helper.CHECK):
             cond_filled.acquire()
             if not wrap.calling:
                 cond_filled.release()
