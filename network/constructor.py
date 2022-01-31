@@ -8,8 +8,10 @@ import bisect
 
 def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, recv_raw_wrap: raw_wrapper, recv_raw_lock: threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition):
     count = 0
-    lastGoodFrame = None
-    lastGoodFramePoints = None
+    # Insert raw frames from listen as dict not array based on fid, then access them using lock and construct frames using warping
+    lastGoodFrame = {}
+    lastGoodFramePoints = {}
+    currfid = 0
     while True:
         sleep(helper.SLEEP)
         count += 1

@@ -36,10 +36,10 @@ def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition
             points, bound_box = getFrameInfo(detector, predictor, frame)
             ptsframe = Frame(pickle.dumps(points, 0), f.fid, True)
             send_fin_lock.acquire()
-            #if f.fid % samplingrate == 0:
-            send_fin_wrap.framedata.append(f)
-            send_fin_wrap.featuredata.append(ptsframe)
-            send_fin_lock.release()
+            if f.fid % samplingrate == 0:
+                send_fin_wrap.framedata.append(f)
+                send_fin_wrap.featuredata.append(ptsframe)
+                send_fin_lock.release()
             helper.cprint("extracted frame: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
         else:
             send_raw_lock.release()

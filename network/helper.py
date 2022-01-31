@@ -14,7 +14,7 @@ SLEEP = 0.002
 PRINT = False
 CHECK = 1000
 SKIPN = 2
-EXTRACTOR_NUM = 5
+EXTRACTOR_NUM = 3
 CONSTRUCTOR_NUM = 1
 
 def cprint(message: str):
