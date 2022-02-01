@@ -4,14 +4,14 @@ from client_wrapper import client_wrapper
 from raw_wrapper import raw_wrapper
 from fin_wrapper import fin_wrapper
 import helper
+import morph
 import bisect
 
 def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, recv_raw_wrap: raw_wrapper, recv_raw_lock: threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition):
     count = 0
     # Insert raw frames from listen as dict not array based on fid, then access them using lock and construct frames using warping
-    lastGoodFrame = {}
-    lastGoodFramePoints = {}
     currfid = 0
+    samplingrate = wrap.freshrate
     while True:
         sleep(helper.SLEEP)
         count += 1
@@ -48,3 +48,18 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
             #recv_fin_wrap.featuredata.append(pts)
             helper.cprint("constructed data: " + str(pts.fid))
             recv_fin_lock.release()
+            if not pts.fid % samplingrate == 0:
+                # Need to create frame using delaunay triangulation
+                # First, check if last frame is present
+                lastGoodFrame = recv_raw_wrap.lastGoodFrames.get(str(f.fid))
+                lastGoodFramePts = recv_raw_wrap.lastGoodFramePoints.get(str(f.fid))
+                constructed = False
+                while not constructed:                    
+                    if not (lastGoodFrame is not None and lastGoodFramePts is not None):
+                        sleep(0.1)
+                    else:
+                        morph.ImageMorphingTriangulation(
+                            lastGoodFrame, lastGoodFramePts, pts.data, 1, 0
+                        )
+                        constructed = True
+                        

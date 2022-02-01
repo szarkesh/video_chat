@@ -40,6 +40,6 @@ def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition
                 send_fin_wrap.framedata.append(f)
                 send_fin_wrap.featuredata.append(ptsframe)
                 send_fin_lock.release()
-            helper.cprint("extracted frame: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
+                helper.cprint("extracted frame: " + str(f.fid) + " ~ " + str(f.data)[1:5] + " | len: " + str(len(f.data)))
         else:
             send_raw_lock.release()

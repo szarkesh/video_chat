@@ -29,6 +29,7 @@ def listen_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, r
                     
 def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, recv_raw_wrap: raw_wrapper, recv_raw_lock: threading.Condition, s: socket):
     count = 0
+    samplingrate = wrap.freshrate
     while True:
             sleep(helper.SLEEP)
             count += 1
@@ -82,7 +83,8 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         # Received frame
                         frame = Frame(payload, fid, True)
                         recv_raw_lock.acquire()
-                        recv_raw_wrap.framedata.append(frame)
+                        #recv_raw_wrap.framedata.append(frame)
+                        recv_raw_wrap.lastGoodFrames[str(fid)] = frame
                         recv_raw_lock.release()
                         helper.cprint("listened frame: " + str(frame.fid))
                     elif type == "D":
@@ -90,6 +92,8 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         frame = Frame(payload, fid, True)
                         recv_raw_lock.acquire()
                         recv_raw_wrap.featuredata.append(frame)
+                        if fid % samplingrate:
+                            recv_raw_wrap.lastGoodFramePoints[str(fid)] = frame
                         recv_raw_lock.release()
                         helper.cprint("listened feature data: " + str(frame.fid))
                     elif type == "E":
