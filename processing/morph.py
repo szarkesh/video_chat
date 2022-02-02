@@ -1,10 +1,6 @@
 import numpy as np
 from scipy.spatial import Delaunay
 import cv2
-import time
-import scipy
-from scipy import signal
-from PIL import Image
 
 
 '''
@@ -177,7 +173,7 @@ Function - Do Not Modify
 '''
 
 
-def ImageMorphingTriangulation(full_im1, full_im2, full_im1_pts, full_im2_pts, warp_frac, dissolve_frac):
+def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, dissolve_frac):
     """
     warps image 1 based on image 2's points. usually warp frac is 1 and dissolve frac is 0
     """
@@ -186,14 +182,13 @@ def ImageMorphingTriangulation(full_im1, full_im2, full_im1_pts, full_im2_pts, w
     im2bounds = [(min(full_im2_pts[:, 0]), max(full_im2_pts[:, 0])), (min(full_im2_pts[:, 1]), max(full_im2_pts[:, 1]))]
 
     im1 = full_im1[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]]
-    im2 = full_im2[im2bounds[1][0]:im2bounds[1][1], im2bounds[0][0]:im2bounds[0][1]]
-
+    cv2.imshow('2', im1)
     im1_pts = np.subtract(full_im1_pts, [im1bounds[0][0],im1bounds[1][0]])
     im2_pts = np.subtract(full_im2_pts, [im2bounds[0][0],im2bounds[1][0]])
 
     # Compute the H,W of the images (same size)
     im1_pts = np.vstack((im1_pts, np.asarray([[0,0], [0, im1.shape[0]], [im1.shape[1], 0], [im1.shape[1],im1.shape[0]]])))
-    im2_pts = np.vstack((im2_pts, np.asarray([[0,0], [0, im2.shape[0]], [im2.shape[1], 0], [im2.shape[1],im2.shape[0]]])))
+    im2_pts = np.vstack((im2_pts, np.asarray([[0,0], [0, im1.shape[0]], [im1.shape[1], 0], [im1.shape[1],im1.shape[0]]])))
 
     size_H = im1.shape[0]
     size_W = im1.shape[1]
@@ -214,14 +209,11 @@ def ImageMorphingTriangulation(full_im1, full_im2, full_im1_pts, full_im2_pts, w
     for ii, element in enumerate(Tri.simplices):
         ABC_Inter_inv_set[ii, :, :] = np.linalg.inv(matrixABC(intermediate_coords, element))
         ABC_im1_set[ii, :, :] = matrixABC(im1_pts, element)
-        ABC_im2_set[ii, :, :] = matrixABC(im2_pts, element)
+        #ABC_im2_set[ii, :, :] = matrixABC(im2_pts, element)
 
     # Generate warp pictures (Use generate warp from the previous block)
     warp_im1 = generate_warp(size_H, size_W, Tri, ABC_Inter_inv_set, ABC_im1_set, im1)
-    warp_im2 = generate_warp(size_H, size_W, Tri, ABC_Inter_inv_set, ABC_im2_set, im2)
-
-    # Cross Dissolve
-    dissolved_pic = (1 - dissolve_frac) * warp_im1 + dissolve_frac * warp_im2
+    #warp_im2 = generate_warp(size_H, size_W, Tri, ABC_Inter_inv_set, ABC_im2_set, im2)
 
     # dissolved_pic = dissolved_pic.astype(np.uint8)
     #
@@ -232,7 +224,5 @@ def ImageMorphingTriangulation(full_im1, full_im2, full_im1_pts, full_im2_pts, w
     # files.download('face_morph.png')
 
     dissolved_full = np.copy(full_im1)
-    dissolved_full[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]] = dissolved_pic
-    cv2.imshow('1', dissolved_full)
-    cv2.imshow('2', full_im2)
-    return None
+    dissolved_full[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]] = warp_im1
+    return dissolved_full

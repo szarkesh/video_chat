@@ -44,12 +44,13 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
 
 def main():
     start = time()
-    srcFile = "lower.mp4"
+    srcFile = "example.mov"
 
     # src_pts = pickle.load(open("facepts/" + srcFile.split(".")[0] + ".pkl", "rb"))
     src_pts = []
 
-    cap = cv2.VideoCapture("videos/" + srcFile)
+    #cap = cv2.VideoCapture("videos/" + srcFile)
+    cap = cv2.VideoCapture(0)
 
     frameIdx = 0
     samplingRate = 60  # sample every x frames
@@ -63,29 +64,36 @@ def main():
 
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
+    prev_box = None
     while cap.isOpened():
         # Capture frame-by-frame
         ret, frame = cap.read()
-        # frame = image_resize(frame, width=300)
+        frame = image_resize(frame, width=300)
         if ret == True:
             # append local context of frame instead
-            points, bound_box = getFrameInfo(detector, predictor, frame)
+            points, prev_box = getFrameInfo(detector, predictor, frame, prev_box)
             src_pts.append(points)
             if frameIdx % samplingRate == 0:
                 # only save bounding box of frame here
-                lastGoodFrame = frame[
-                    bound_box[1][0] : bound_box[1][1], bound_box[0][0] : bound_box[0][1]
-                ]
-                lastGoodFramePoints = src_pts[frameIdx] - np.array(
-                    [bound_box[0][0], bound_box[1][0]]
-                )
+                lastGoodFrame = frame
+                lastGoodFramePoints = src_pts[frameIdx]
+                print("last good frame face is ", np.mean(lastGoodFramePoints))
+                # lastGoodFrame = frame[
+                #     bound_box[1][0] : bound_box[1][1], bound_box[0][0] : bound_box[0][1]
+                # ]
+                # lastGoodFramePoints = src_pts[frameIdx] - np.array(
+                #     [bound_box[0][0], bound_box[1][0]]
+                # )
             # Display the resulting frame
 
             # for point in src_pts[frameIdx]:
             # cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
-            morph.ImageMorphingTriangulation(
-                frame, lastGoodFrame, src_pts[frameIdx], lastGoodFramePoints, 0.7, 0
-            )
+            if points is not None:
+                output_image = morph.ImageMorphingTriangulation(
+                        lastGoodFrame, lastGoodFramePoints, src_pts[frameIdx], 1, 0
+                )
+
+            cv2.imshow('1', output_image)
 
             frameIdx += 1
             # Press Q on keyboard to  exit
@@ -101,5 +109,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # cProfile.run("main")
+    #cProfile.run("main")
     main()

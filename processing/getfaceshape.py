@@ -32,18 +32,30 @@ def getPoints(vName):
     return points
 
 
-def getFrameInfo(detector, predictor, srcColor):
-    gray = cv.cvtColor(srcColor, cv.COLOR_BGR2GRAY)
+def getFrameInfo(detector, predictor, srcColor, prev_box = None):
+    left = 0
+    top = 0
+    if prev_box is not None: # hint for where to look for the face
+        prev_width = prev_box[1][1] - prev_box[1][0]
+        prev_height = prev_box[0][1] - prev_box[0][0]
+
+        left = prev_box[0][0] - int(prev_width / 10)
+        right = prev_box[0][1] + int(prev_width / 10)
+        top = prev_box[1][0] - int(prev_height / 10)
+        bottom = prev_box[1][1] + int(prev_height / 10)
+        gray = cv.cvtColor(srcColor[top:bottom,left:right], cv.COLOR_RGB2GRAY)
+    else:
+        gray = cv.cvtColor(srcColor, cv.COLOR_RGB2GRAY)
     det = detector(gray, 1)
     if len(det) == 0:
         print("no good match")
-        return np.asarray([]), None
+        return None, None
     det = det[0]
 
     shape = predictor(gray, det)
     shape = face_utils.shape_to_np(shape)
-
-    bounding_box = [[det.left(), det.right()], [det.top(), det.bottom()]]
+    shape = shape + np.asarray([left, top])
+    bounding_box = np.asarray([[det.left() + left, det.right() + left], [det.top() + top, det.bottom() + top]])
 
     return shape, bounding_box
 
