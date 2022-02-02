@@ -3,6 +3,9 @@ import cv2 as cv
 import numpy as np
 import dlib
 from imutils import face_utils
+import mediapipe as mp
+mp_drawing = mp.solutions.drawing_utils
+mp_face_mesh = mp.solutions.face_mesh
 import pickle
 
 
@@ -46,13 +49,17 @@ def getFrameInfo(detector, predictor, srcColor, prev_box = None):
         gray = cv.cvtColor(srcColor[top:bottom,left:right], cv.COLOR_RGB2GRAY)
     else:
         gray = cv.cvtColor(srcColor, cv.COLOR_RGB2GRAY)
-    det = detector(gray, 1)
-    if len(det) == 0:
-        print("no good match")
-        return None, None
-    det = det[0]
 
-    shape = predictor(gray, det)
+    with mp_face_mesh.FaceMesh(
+        static_image_mode=True,
+    )
+    #det = detector(gray, 1)
+    # if len(det) == 0:
+    #     print("no good match")
+    #     return None, None
+    #det = det[0]
+
+    #shape = predictor(gray, det)
     shape = face_utils.shape_to_np(shape)
     shape = shape + np.asarray([left, top])
     bounding_box = np.asarray([[det.left() + left, det.right() + left], [det.top() + top, det.bottom() + top]])

@@ -9,7 +9,11 @@ import numpy as np
 from collections import deque
 
 
-from getfaceshape import getFrameInfo, getPoints
+#from getfaceshape import getFrameInfo, getPoints
+
+import mediapipe as mp
+mp_drawing = mp.solutions.drawing_utils
+mp_face_mesh = mp.solutions.face_mesh
 
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
@@ -55,6 +59,7 @@ def main():
     TARGET_FRAME_RATE = 2
     BEGIN_IMAGE_WIDTH = 720
     IMAGE_WIDTH_OPTIONS = [240, 360, 720]
+    FLAG_AUTO_RESIZE = False
 
 
     quality_index = IMAGE_WIDTH_OPTIONS.index(BEGIN_IMAGE_WIDTH)
@@ -79,48 +84,63 @@ def main():
     last_frame_time_elapsed = 0
 
     t = time.time()
-    while cap.isOpened():
-        temp = time.time()
-        last_frame_time_elapsed = temp - t
-        t = temp
-        if (1 / last_frame_time_elapsed < TARGET_FRAME_RATE and quality_index > 0):
-            print('resizing to ', IMAGE_WIDTH_OPTIONS[quality_index-1])
-            resize_factor = IMAGE_WIDTH_OPTIONS[quality_index] / IMAGE_WIDTH_OPTIONS[quality_index - 1]
-            quality_index -= 1
-            lastGoodFrame = image_resize(lastGoodFrame, IMAGE_WIDTH_OPTIONS[quality_index])
-            lastGoodFramePoints = (lastGoodFramePoints / resize_factor).astype(int)
-            prev_box = (prev_box / resize_factor).astype(int)
-            t = time.time()
-        # Capture frame-by-frame
-        ret, frame = cap.read()
-        frame = image_resize(frame, width=IMAGE_WIDTH_OPTIONS[quality_index])
-        if ret == True:
-            # append local context of frame instead
-            points, prev_box = getFrameInfo(detector, predictor, frame, prev_box)
-            if frameIdx % samplingRate == 0:
-                # only save bounding box of frame here
-                lastGoodFrame = frame
-                lastGoodFramePoints = points
-                print("last good frame face is ", np.mean(lastGoodFramePoints))
-            # Display the resulting frame
+    with mp_face_mesh.FaceMesh(
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5,
+        max_num_faces=1
+    ) as face_mesh:
+        while cap.isOpened():
+            temp = time.time()
+            last_frame_time_elapsed = temp - t
+            t = temp
+            if (FLAG_AUTO_RESIZE and 1 / last_frame_time_elapsed < TARGET_FRAME_RATE and quality_index > 0):
+                print('resizing to ', IMAGE_WIDTH_OPTIONS[quality_index-1])
+                resize_factor = IMAGE_WIDTH_OPTIONS[quality_index] / IMAGE_WIDTH_OPTIONS[quality_index - 1]
+                quality_index -= 1
+                lastGoodFrame = image_resize(lastGoodFrame, IMAGE_WIDTH_OPTIONS[quality_index])
+                lastGoodFramePoints = (lastGoodFramePoints / resize_factor).astype(int)
+                prev_box = (prev_box / resize_factor).astype(int)
+                t = time.time()
+            # Capture frame-by-frame
+            ret, frame = cap.read()
+            frame = image_resize(frame, width=IMAGE_WIDTH_OPTIONS[quality_index])
+            if ret == True:
+                # append local context of frame instead
+                image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                image.flags.writeable = False
+                results = face_mesh.process(image)
+                image.flags.writeable = True
+                image = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                if results.multi_face_landmarks[0]:
+                    mesh_points=np.array([np.multiply([p.x, p.y], [frame.shape[1], frame.shape[0]]).astype(int) for p in results.multi_face_landmarks[0].landmark])
+                else:
+                    print('results no workie')
+                    continue
+                if frameIdx % samplingRate == 0:
+                    # only save bounding box of frame here
+                    lastGoodFrame = frame
+                    lastGoodFramePoints = mesh_points
+                    print("last good frame face is ", np.mean(lastGoodFramePoints))
+                # Display the resulting frame
 
-            # for point in points:
-            #     cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
-            if points is not None:
-                output_image = morph.ImageMorphingTriangulation(
-                        lastGoodFrame, lastGoodFramePoints, points, 1, 0
-                )
+                # for point in mesh_points:
+                #     cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
+                if mesh_points is not None:
+                    output_image = morph.ImageMorphingTriangulation(
+                            lastGoodFrame, lastGoodFramePoints, mesh_points, 1, 0
+                    )
 
-            cv2.imshow('1', image_resize(output_image, width=500))
+                cv2.imshow('1', image_resize(output_image, width=500))
+                cv2.imshow('2', image_resize(frame, width=500))
 
-            frameIdx += 1
-            # Press Q on keyboard to  exit
-            if cv2.waitKey(25) & 0xFF == ord("q"):
+                frameIdx += 1
+                # Press Q on keyboard to  exit
+                if cv2.waitKey(25) & 0xFF == ord("q"):
+                    break
+
+            # Break the loop
+            else:
                 break
-
-        # Break the loop
-        else:
-            break
 
 
 if __name__ == "__main__":
