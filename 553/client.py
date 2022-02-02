@@ -153,7 +153,7 @@ def request_thread_func(wrap, songId, sock, cond_filled):
 
 def main():
     if len(sys.argv) < 3:
-        print 'Usage: %s <server name/ip> <server port>' % sys.argv[0]
+        print('Usage: %s <server name/ip> <server port>' % sys.argv[0])
         sys.exit(1)
 
     # Create a pseudo-file wrapper, condition variable, and socket.  These will
