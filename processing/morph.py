@@ -182,7 +182,6 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
     im2bounds = [(min(full_im2_pts[:, 0]), max(full_im2_pts[:, 0])), (min(full_im2_pts[:, 1]), max(full_im2_pts[:, 1]))]
 
     im1 = full_im1[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]]
-    cv2.imshow('2', im1)
     im1_pts = np.subtract(full_im1_pts, [im1bounds[0][0],im1bounds[1][0]])
     im2_pts = np.subtract(full_im2_pts, [im2bounds[0][0],im2bounds[1][0]])
 
@@ -203,7 +202,7 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
     # Initialize the Triangle Matrices for all the triangles in image
     ABC_Inter_inv_set = np.zeros((nTri, 3, 3))
     ABC_im1_set = np.zeros((nTri, 3, 3))
-    ABC_im2_set = np.zeros((nTri, 3, 3))
+    #ABC_im2_set = np.zeros((nTri, 3, 3))
 
     # Fill the Triangle Matries
     for ii, element in enumerate(Tri.simplices):

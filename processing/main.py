@@ -1,11 +1,13 @@
 import pickle
-from time import time
+import time
 import morph
 import cv2
 import dlib
 import cProfile
 import re
 import numpy as np
+from collections import deque
+
 
 from getfaceshape import getFrameInfo, getPoints
 
@@ -43,17 +45,25 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
 
 
 def main():
-    start = time()
     srcFile = "example.mov"
-
-    # src_pts = pickle.load(open("facepts/" + srcFile.split(".")[0] + ".pkl", "rb"))
-    src_pts = []
 
     #cap = cv2.VideoCapture("videos/" + srcFile)
     cap = cv2.VideoCapture(0)
 
     frameIdx = 0
     samplingRate = 60  # sample every x frames
+    TARGET_FRAME_RATE = 2
+    BEGIN_IMAGE_WIDTH = 720
+    IMAGE_WIDTH_OPTIONS = [240, 360, 720]
+
+
+    quality_index = IMAGE_WIDTH_OPTIONS.index(BEGIN_IMAGE_WIDTH)
+
+    if (quality_index == -1):
+        raise ValueError('Beginning image size not in list of sizes')
+
+
+
     lastGoodFrame = None
     lastGoodFramePoints = None
 
@@ -65,35 +75,43 @@ def main():
     detector = dlib.get_frontal_face_detector()
     predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     prev_box = None
+
+    last_frame_time_elapsed = 0
+
+    t = time.time()
     while cap.isOpened():
+        temp = time.time()
+        last_frame_time_elapsed = temp - t
+        t = temp
+        if (1 / last_frame_time_elapsed < TARGET_FRAME_RATE and quality_index > 0):
+            print('resizing to ', IMAGE_WIDTH_OPTIONS[quality_index-1])
+            resize_factor = IMAGE_WIDTH_OPTIONS[quality_index] / IMAGE_WIDTH_OPTIONS[quality_index - 1]
+            quality_index -= 1
+            lastGoodFrame = image_resize(lastGoodFrame, IMAGE_WIDTH_OPTIONS[quality_index])
+            lastGoodFramePoints = (lastGoodFramePoints / resize_factor).astype(int)
+            prev_box = (prev_box / resize_factor).astype(int)
+            t = time.time()
         # Capture frame-by-frame
         ret, frame = cap.read()
-        frame = image_resize(frame, width=300)
+        frame = image_resize(frame, width=IMAGE_WIDTH_OPTIONS[quality_index])
         if ret == True:
             # append local context of frame instead
             points, prev_box = getFrameInfo(detector, predictor, frame, prev_box)
-            src_pts.append(points)
             if frameIdx % samplingRate == 0:
                 # only save bounding box of frame here
                 lastGoodFrame = frame
-                lastGoodFramePoints = src_pts[frameIdx]
+                lastGoodFramePoints = points
                 print("last good frame face is ", np.mean(lastGoodFramePoints))
-                # lastGoodFrame = frame[
-                #     bound_box[1][0] : bound_box[1][1], bound_box[0][0] : bound_box[0][1]
-                # ]
-                # lastGoodFramePoints = src_pts[frameIdx] - np.array(
-                #     [bound_box[0][0], bound_box[1][0]]
-                # )
             # Display the resulting frame
 
-            # for point in src_pts[frameIdx]:
-            # cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
+            # for point in points:
+            #     cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
             if points is not None:
                 output_image = morph.ImageMorphingTriangulation(
-                        lastGoodFrame, lastGoodFramePoints, src_pts[frameIdx], 1, 0
+                        lastGoodFrame, lastGoodFramePoints, points, 1, 0
                 )
 
-            cv2.imshow('1', output_image)
+            cv2.imshow('1', image_resize(output_image, width=500))
 
             frameIdx += 1
             # Press Q on keyboard to  exit
@@ -103,9 +121,6 @@ def main():
         # Break the loop
         else:
             break
-
-    end = time()
-    print((end - start) / 1000)
 
 
 if __name__ == "__main__":
