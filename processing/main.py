@@ -87,7 +87,8 @@ def main():
     with mp_face_mesh.FaceMesh(
         min_detection_confidence=0.5,
         min_tracking_confidence=0.5,
-        max_num_faces=1
+        max_num_faces=1,
+        refine_landmarks=True,
     ) as face_mesh:
         while cap.isOpened():
             temp = time.time()
@@ -111,7 +112,7 @@ def main():
                 results = face_mesh.process(image)
                 image.flags.writeable = True
                 image = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                if results.multi_face_landmarks[0]:
+                if results.multi_face_landmarks:
                     mesh_points=np.array([np.multiply([p.x, p.y], [frame.shape[1], frame.shape[0]]).astype(int) for p in results.multi_face_landmarks[0].landmark])
                 else:
                     print('results no workie')
