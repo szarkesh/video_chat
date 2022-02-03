@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.spatial import Delaunay
 import cv2
+import helpers_cv2
+import face_utils
 
 
 '''
@@ -8,6 +10,7 @@ Helper Function - Do Not Modify
 You can use this function in your code
 '''
 
+delaunay_triangulation = None
 
 def matrixABC(sparse_control_points, elements):
     """
@@ -173,55 +176,61 @@ Function - Do Not Modify
 '''
 
 
-def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, dissolve_frac):
+def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, background_frame, use_all_landmarks = True):
     """
     warps image 1 based on image 2's points. usually warp frac is 1 and dissolve frac is 0
     """
+    if not use_all_landmarks:
+        full_im1_pts = full_im1_pts[face_utils.LANDMARK_SUBSET]
+        full_im2_pts = full_im2_pts[face_utils.LANDMARK_SUBSET]
+    #im1_pts = np.subtract(full_im1_pts, [im1bounds[0][0],im1bounds[1][0]])
 
-    im1bounds = [(min(full_im1_pts[:,0]), max(full_im1_pts[:,0])), (min(full_im1_pts[:,1]), max(full_im1_pts[:,1]))]
-    im2bounds = [(min(full_im2_pts[:, 0]), max(full_im2_pts[:, 0])), (min(full_im2_pts[:, 1]), max(full_im2_pts[:, 1]))]
+    #M, mask = cv2.findHomography(full_im2_pts, im1_pts)
+    #im2_pts = cv2.perspectiveTransform(np.array([full_im2_pts], np.float32), M)[0].astype(int)
 
-    im1 = full_im1[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]]
-    im1_pts = np.subtract(full_im1_pts, [im1bounds[0][0],im1bounds[1][0]])
-    im2_pts = np.subtract(full_im2_pts, [im2bounds[0][0],im2bounds[1][0]])
 
+    M, mask = cv2.findHomography(full_im1_pts, full_im2_pts)
+    transformed_im1_pts = cv2.perspectiveTransform(np.array([full_im1_pts], np.float32), M)[0].astype(int)
+    transformed_im1 = cv2.warpPerspective(full_im1, M, (full_im1.shape[1], full_im1.shape[0]))
+
+    bounds = [(min(full_im2_pts[:,0]), max(full_im2_pts[:,0])), (min(full_im2_pts[:,1]), max(full_im2_pts[:,1]))]
+
+
+    cropped_im2_pts = np.subtract(full_im2_pts, [bounds[0][0], bounds[1][0]])
+    cropped_im1 = transformed_im1[bounds[1][0]:bounds[1][1],bounds[0][0]:bounds[0][1]]
+
+    cropped_im1_pts = np.subtract(transformed_im1_pts, [bounds[0][0], bounds[1][0]])
     # Compute the H,W of the images (same size)
-    im1_pts = np.vstack((im1_pts, np.asarray([[0,0], [0, im1.shape[0]], [im1.shape[1], 0], [im1.shape[1],im1.shape[0]]])))
-    im2_pts = np.vstack((im2_pts, np.asarray([[0,0], [0, im1.shape[0]], [im1.shape[1], 0], [im1.shape[1],im1.shape[0]]])))
+    cropped_im1_pts_with_corners = np.vstack((cropped_im1_pts, np.asarray([[0,0], [0, cropped_im1.shape[0]], [cropped_im1.shape[1], 0], [cropped_im1.shape[1], cropped_im1.shape[0]]])))
+    cropped_im2_pts_with_corners = np.vstack((cropped_im2_pts, np.asarray([[0,0], [0, cropped_im1.shape[0]], [cropped_im1.shape[1], 0], [cropped_im1.shape[1], cropped_im1.shape[0]]])))
 
-    size_H = im1.shape[0]
-    size_W = im1.shape[1]
+    size_H = cropped_im1.shape[0]
+    size_W = cropped_im1.shape[1]
 
     # Find the coordinates of the intermediate points
-    intermediate_coords = (1 - warp_frac) * im1_pts + warp_frac * im2_pts
+    intermediate_coords = (1 - warp_frac) * cropped_im1_pts_with_corners + warp_frac * cropped_im2_pts_with_corners
 
     # Generate Triangulation for the intermediate points (Use Delaunay function)
-    Tri = Delaunay(intermediate_coords)
-    nTri = Tri.simplices.shape[0]
+    global delaunay_triangulation
+    delaunay_triangulation = Delaunay(intermediate_coords)
+    nTri = delaunay_triangulation.simplices.shape[0]
 
     # Initialize the Triangle Matrices for all the triangles in image
     ABC_Inter_inv_set = np.zeros((nTri, 3, 3))
     ABC_im1_set = np.zeros((nTri, 3, 3))
-    #ABC_im2_set = np.zeros((nTri, 3, 3))
 
     # Fill the Triangle Matries
-    for ii, element in enumerate(Tri.simplices):
+    for ii, element in enumerate(delaunay_triangulation.simplices):
         ABC_Inter_inv_set[ii, :, :] = np.linalg.inv(matrixABC(intermediate_coords, element))
-        ABC_im1_set[ii, :, :] = matrixABC(im1_pts, element)
+        ABC_im1_set[ii, :, :] = matrixABC(cropped_im1_pts_with_corners, element)
         #ABC_im2_set[ii, :, :] = matrixABC(im2_pts, element)
 
-    # Generate warp pictures (Use generate warp from the previous block)
-    warp_im1 = generate_warp(size_H, size_W, Tri, ABC_Inter_inv_set, ABC_im1_set, im1)
-    #warp_im2 = generate_warp(size_H, size_W, Tri, ABC_Inter_inv_set, ABC_im2_set, im2)
+    warp_im1 = generate_warp(size_H, size_W, delaunay_triangulation, ABC_Inter_inv_set, ABC_im1_set, cropped_im1)
 
-    # dissolved_pic = dissolved_pic.astype(np.uint8)
-    #
-    # # Saving each and every image to the folder
-    # imgs = Image.fromarray(dissolved_pic, 'RGB')
-    # imgs.save('face_morph.png')
-    #
-    # files.download('face_morph.png')
+    dissolved_full = background_frame.copy()
+    convex_hull = cv2.convexHull(np.array(cropped_im1_pts, dtype='float32'))
+    convex_hull = [convex_hull.reshape(-1,2).astype(int)]
+    mask = helpers_cv2.mask_from_contours(cropped_im1, convex_hull)
 
-    dissolved_full = np.copy(full_im1)
-    dissolved_full[im1bounds[1][0]:im1bounds[1][1], im1bounds[0][0]:im1bounds[0][1]] = warp_im1
+    dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]] = np.where(mask, warp_im1, dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]])
     return dissolved_full
