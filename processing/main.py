@@ -17,6 +17,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 drawSpecCircle = mp.solutions.drawing_utils.DrawingSpec(thickness=0, circle_radius=0, color=(0, 0, 255))
 mp_face_mesh = mp.solutions.face_mesh
+mp_selfie_segmentation = mp.solutions.selfie_segmentation
 
 
 
@@ -71,7 +72,9 @@ def main():
     BEGIN_IMAGE_WIDTH = 720
     IMAGE_WIDTH_OPTIONS = [240, 360, 720]
     FLAG_AUTO_RESIZE = False
-    FLAG_USE_ALL_LANDMARKS = True
+    FLAG_USE_ALL_LANDMARKS = False
+
+    BODY_THRESH = 0.4 # affects what pieces of the body you think are real.
 
 
     quality_index = IMAGE_WIDTH_OPTIONS.index(BEGIN_IMAGE_WIDTH)
@@ -89,8 +92,6 @@ def main():
     cv2.moveWindow("1", -200, 0)
     cv2.moveWindow("2", 600, 0)
 
-    detector = dlib.get_frontal_face_detector()
-    predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
     prev_box = None
 
     last_frame_time_elapsed = 0
@@ -109,7 +110,7 @@ def main():
         min_tracking_confidence=0.5,
         max_num_faces=1,
         refine_landmarks=True,
-    ) as face_mesh:
+    ) as face_mesh, mp_selfie_segmentation.SelfieSegmentation(model_selection=0) as selfie_segmentation:
         while cap.isOpened():
             ret, frame = cap.read()
             frame = image_resize(frame, width=IMAGE_WIDTH_OPTIONS[quality_index])
@@ -128,22 +129,27 @@ def main():
                         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         image.flags.writeable = False
                         results = face_mesh.process(image)
+                        segmentation_results = selfie_segmentation.process(image)
                         image.flags.writeable = True
                         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
                         if results.multi_face_landmarks:
                             mp_drawing.draw_landmarks(image=display_frame, landmark_list=results.multi_face_landmarks[0], landmark_drawing_spec=drawSpecCircle)
+                            condition = np.dstack((segmentation_results.segmentation_mask > BODY_THRESH ,) * 3).astype(np.float32)
+                            print(condition)
+                            display_frame = np.multiply(display_frame, condition)
                         else:
                             print('unable to find face')
                         cv2.putText(display_frame, prompts[prompt_index], (100,100), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1.2, color=(255,255,255))
                         cv2.imshow('1', display_frame)
                     if cv2.waitKey(1) & 0xFF == ord('n'):
-                        prompt_index += 1
-                        calibration_frames.append(image)
-                        face_pts = face_utils.get_landmarks_to_np(results, image.shape[1], image.shape[0], FLAG_USE_ALL_LANDMARKS)
-                        calibration_meshes.append(face_pts)
-                        print('face_pts have eye openness', face_utils.eye_openness(face_pts))
-                        if prompt_index >= len(prompts):
-                            is_calibrating = False
+                        if results.multi_face_landmarks:
+                            prompt_index += 1
+                            calibration_frames.append(image)
+                            face_pts = face_utils.get_landmarks_to_np(results, image.shape[1], image.shape[0], FLAG_USE_ALL_LANDMARKS)
+                            calibration_meshes.append(face_pts)
+                            print('face_pts have eye openness', face_utils.eye_openness(face_pts))
+                            if prompt_index >= len(prompts):
+                                is_calibrating = False
                     if cv2.waitKey(1) & 0xFF == ord('q'):
                         break
             else:

@@ -188,6 +188,7 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
     #M, mask = cv2.findHomography(full_im2_pts, im1_pts)
     #im2_pts = cv2.perspectiveTransform(np.array([full_im2_pts], np.float32), M)[0].astype(int)
 
+    #homography_
 
     M, mask = cv2.findHomography(full_im1_pts, full_im2_pts)
     transformed_im1_pts = cv2.perspectiveTransform(np.array([full_im1_pts], np.float32), M)[0].astype(int)
