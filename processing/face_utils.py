@@ -19,6 +19,10 @@ class face_pts(IntEnum):
 
 LANDMARK_SUBSET = np.asarray(list(filter(lambda x: x % 3 == 0 or x >= 468, range(478))))
 
+
+# relevant points for the body
+BODY_SUBSET = [12,11,8,7]
+FACE_POSE_SUBSET = [234, 54, 251, 356, 197, 107, 336, 296, 283]
 def eye_openness(mesh):
     face_height = mesh[face_pts.NOSE_BOTTOM][1] - mesh[face_pts.FACE_TOP][1]
     left_openness = (mesh[face_pts.LEFT_EYE_BOTTOM][1] - mesh[face_pts.LEFT_EYE_TOP][1]) / face_height * 5
@@ -38,7 +42,7 @@ def mesh_similarity(mesh1, mesh2):
     features2 = [eye_openness(mesh2), mouth_openness(mesh2), mouth_width(mesh2)]
     return 1 - spatial.distance.cosine(features1, features2)
 
-def get_landmarks_to_np(results, width, height, use_all = True):
+def get_landmarks_to_np(landmarks, width, height, use_all = True):
     all_landmarks = np.array([np.multiply([p.x, p.y], [width, height]).astype(int) for p in
-              results.multi_face_landmarks[0].landmark])
+              landmarks.landmark])
     return all_landmarks

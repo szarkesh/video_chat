@@ -3,6 +3,7 @@ from scipy.spatial import Delaunay
 import cv2
 import helpers_cv2
 import face_utils
+import math
 
 
 '''
@@ -232,6 +233,31 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
     convex_hull = cv2.convexHull(np.array(cropped_im1_pts, dtype='float32'))
     convex_hull = [convex_hull.reshape(-1,2).astype(int)]
     mask = helpers_cv2.mask_from_contours(cropped_im1, convex_hull)
-
-    dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]] = np.where(mask, warp_im1, dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]])
+    center = (int((bounds[0][0] + bounds[0][1]) / 2), int((bounds[1][0] + bounds[1][1]) / 2))
+    print(center)
+    dissolved_full = cv2.seamlessClone(warp_im1, dissolved_full, mask, center, cv2.NORMAL_CLONE)
+    #dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]] = np.where(mask, warp_im1, dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]])
     return dissolved_full
+
+
+# pastes the body from the neutral frame onto the background frame at the given pose
+def PasteBody(background_frame, neutral_frame, neutral_pose, neutral_mask, new_pose):
+
+    neutral_pose = neutral_pose#[face_utils.FACE_POSE_SUBSET]
+    new_pose = new_pose#[face_utils.FACE_POSE_SUBSET]
+    cv2.imshow('2', neutral_mask)
+    neutral_masked = cv2.bitwise_and(neutral_frame, neutral_frame, mask=neutral_mask)
+    print(np.mean(neutral_mask), 'avg mask size')
+    M, mask = cv2.estimateAffine2D(neutral_pose, new_pose)
+    a,b,c,d = M[0][0], M[0][1], M[1][0], M[1][1]
+    M2 = np.array([[np.sign(a)*math.sqrt(a**2+b**2), 0, M[0][2]], [0, np.sign(d)*math.sqrt(c**2+d**2), M[1][2]]])
+    #print(M2)
+    center = (int(background_frame.shape[1]/2), int(background_frame.shape[0]/2))
+    warped = cv2.warpAffine(neutral_masked, M2, (neutral_frame.shape[1], neutral_frame.shape[0]))
+    kernel = np.ones((5, 5), np.float32) / 25
+    mask_warped = cv2.warpAffine(neutral_mask, M2, (neutral_frame.shape[1], neutral_frame.shape[0]))
+    mask_warped = cv2.GaussianBlur(mask_warped, (21,21), cv2.BORDER_DEFAULT)
+
+    mask_warped_3channel = np.dstack((mask_warped,) * 3)
+    cv2.imshow('2', mask_warped * 255)
+    return mask_warped_3channel * warped + (1-mask_warped_3channel)*background_frame

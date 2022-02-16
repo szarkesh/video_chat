@@ -7,7 +7,6 @@ from fin_wrapper import fin_wrapper
 import helper
 import dlib
 import pickle
-from getfaceshape import getFrameInfo
 
 def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, send_raw_wrap: raw_wrapper, send_raw_lock: threading.Condition, send_fin_wrap: fin_wrapper, send_fin_lock: threading.Condition):
     count = 0

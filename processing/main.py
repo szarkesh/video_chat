@@ -18,6 +18,7 @@ mp_drawing_styles = mp.solutions.drawing_styles
 drawSpecCircle = mp.solutions.drawing_utils.DrawingSpec(thickness=0, circle_radius=0, color=(0, 0, 255))
 mp_face_mesh = mp.solutions.face_mesh
 mp_selfie_segmentation = mp.solutions.selfie_segmentation
+mp_holistic = mp.solutions.holistic
 
 
 
@@ -98,19 +99,16 @@ def main():
 
     calibration_frames = []
     calibration_meshes = []
+    calibration_poses = []
+    calibration_masks = []
     background_frame = None
-    prompts = ['Show a neutral face', 'Now show a smile', 'Now show us your eyes closed','Now show your mouth half open', 'Now open your mouth more!', 'Now do a half smile', 'Now purse your lips']
+    prompts = ['Show a neutral face'] #,'Now show a smile', 'Now show us your eyes closed','Now show your mouth half open', 'Now open your mouth more!', 'Now do a half smile', 'Now purse your lips']
 
     is_calibrating = True
     prompt_index = 0
 
     t = time.time()
-    with mp_face_mesh.FaceMesh(
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5,
-        max_num_faces=1,
-        refine_landmarks=True,
-    ) as face_mesh, mp_selfie_segmentation.SelfieSegmentation(model_selection=0) as selfie_segmentation:
+    with mp_holistic.Holistic(static_image_mode=True, model_complexity=1, enable_segmentation=True, refine_face_landmarks=True) as holistic_detector:
         while cap.isOpened():
             ret, frame = cap.read()
             frame = image_resize(frame, width=IMAGE_WIDTH_OPTIONS[quality_index])
@@ -128,25 +126,35 @@ def main():
                         display_frame = frame.copy()
                         image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                         image.flags.writeable = False
-                        results = face_mesh.process(image)
-                        segmentation_results = selfie_segmentation.process(image)
+                        results = holistic_detector.process(image)
                         image.flags.writeable = True
                         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-                        if results.multi_face_landmarks:
-                            mp_drawing.draw_landmarks(image=display_frame, landmark_list=results.multi_face_landmarks[0], landmark_drawing_spec=drawSpecCircle)
-                            condition = np.dstack((segmentation_results.segmentation_mask > BODY_THRESH ,) * 3).astype(np.float32)
-                            print(condition)
-                            display_frame = np.multiply(display_frame, condition)
+                        if results.face_landmarks:
+                            mp_drawing.draw_landmarks(image=display_frame, landmark_list=results.face_landmarks, landmark_drawing_spec=drawSpecCircle)
+                            thresh_mask = (results.segmentation_mask > BODY_THRESH).astype('uint8')
+                        if results.pose_landmarks:
+                            mp_drawing.draw_landmarks(
+                                display_frame,
+                                results.pose_landmarks,
+                                mp_holistic.POSE_CONNECTIONS,
+                                landmark_drawing_spec=mp_drawing_styles.
+                                    get_default_pose_landmarks_style())
                         else:
                             print('unable to find face')
                         cv2.putText(display_frame, prompts[prompt_index], (100,100), fontFace=cv2.FONT_HERSHEY_PLAIN, fontScale=1.2, color=(255,255,255))
                         cv2.imshow('1', display_frame)
                     if cv2.waitKey(1) & 0xFF == ord('n'):
-                        if results.multi_face_landmarks:
+                        if results.face_landmarks:
                             prompt_index += 1
                             calibration_frames.append(image)
-                            face_pts = face_utils.get_landmarks_to_np(results, image.shape[1], image.shape[0], FLAG_USE_ALL_LANDMARKS)
+                            face_pts = face_utils.get_landmarks_to_np(results.face_landmarks, image.shape[1], image.shape[0], FLAG_USE_ALL_LANDMARKS)
+                            body_pts = face_utils.get_landmarks_to_np(results.pose_landmarks, image.shape[1],
+                                                                      image.shape[0], FLAG_USE_ALL_LANDMARKS)
+                            print(body_pts)
+                            calibration_masks.append(thresh_mask)
                             calibration_meshes.append(face_pts)
+                            calibration_poses.append(body_pts)
+                            calibration_masks.append(results.segmentation_mask)
                             print('face_pts have eye openness', face_utils.eye_openness(face_pts))
                             if prompt_index >= len(prompts):
                                 is_calibrating = False
@@ -168,27 +176,23 @@ def main():
                     # append local context of frame instead
                     image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                     image.flags.writeable = False
-                    results = face_mesh.process(image)
+                    results = holistic_detector.process(image)
                     image.flags.writeable = True
                     image = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                    if results.multi_face_landmarks:
-                        mesh_points=face_utils.get_landmarks_to_np(results, image.shape[1],image.shape[0],FLAG_USE_ALL_LANDMARKS)
+                    if results.face_landmarks:
+                        mesh_points=face_utils.get_landmarks_to_np(results.face_landmarks, image.shape[1],image.shape[0],FLAG_USE_ALL_LANDMARKS)
+                    if results.pose_landmarks:
+                        body_points = face_utils.get_landmarks_to_np(results.pose_landmarks, image.shape[1],
+                                                                     image.shape[0], FLAG_USE_ALL_LANDMARKS)
                     else:
                         print('results no workie')
                         continue
-                    # if frameIdx % samplingRate == 0:
-                    #     # only save bounding box of frame here
-                    #     lastGoodFrame = frame
-                    #     lastGoodFramePoints = mesh_points
-                    #     print("last good frame face is ", np.mean(lastGoodFramePoints))
-                    # Display the resulting frame
 
-                    # for point in mesh_points:
-                    #     cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
                     if mesh_points is not None:
                         calibration_img_idx = get_most_similar_frame_idx(calibration_meshes, mesh_points)
+                        pasted_body = morph.PasteBody(background_frame, calibration_frames[0], calibration_meshes[0], calibration_masks[0], mesh_points)
                         output_image = morph.ImageMorphingTriangulation(
-                                calibration_frames[calibration_img_idx], calibration_meshes[calibration_img_idx], mesh_points, 1, background_frame, FLAG_USE_ALL_LANDMARKS
+                                calibration_frames[calibration_img_idx], calibration_meshes[calibration_img_idx], mesh_points, 1, pasted_body, FLAG_USE_ALL_LANDMARKS
                         )
 
                         #output_image = frame
