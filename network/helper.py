@@ -75,7 +75,7 @@ def start(wrap, cond_filled, prompts, IP, PORT, recv_raw_wrap, recv_raw_lock, re
     render_thread.start()
     capture_thread = threading.Thread(
         target=capture_thread_func,
-        args=(wrap, cond_filled, send_raw_wrap, send_raw_lock, recv_raw_wrap)
+        args=(wrap, cond_filled, send_raw_wrap, send_raw_lock, recv_raw_wrap, send_fin_wrap)
     )
     capture_thread.daemon = True
     capture_thread.start()
