@@ -98,7 +98,7 @@ def main():
     # Create a thread whose job is to listen on a port for incoming messages
     client_recv_thread = threading.Thread(
         target=server_client_recv_thread_func,
-        args=(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads,
+        args=(wrap, cond_filled, prompts, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads,
             server_sock, server_recv_sock)
     )
     client_recv_thread.daemon = True
