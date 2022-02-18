@@ -4,3 +4,8 @@ class fin_wrapper(object):
         self.framedata = []
         self.featuredata = []
         self.headframeid = 0
+        self.calibration_frames = []
+        self.calibration_meshes = []
+        self.calibration_poses = []
+        self.calibration_masks = []
+        self.background_frame = None

@@ -59,7 +59,7 @@ def datreceive(sock: socket.socket, data, length: int):
         cprint(str(len(data)) + " / " + str(length))
         cprint(data)
 
-def start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads):
+def start(wrap, cond_filled, prompts, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads):
     print("Spawning Video Call Threads...")
     listen_thread = threading.Thread(
         target=listen_thread_func,
@@ -69,13 +69,13 @@ def start(wrap, cond_filled, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wr
     listen_thread.start()
     render_thread = threading.Thread(
         target=render_thread_func,
-        args=(wrap, cond_filled, recv_fin_wrap, recv_fin_lock)
+        args=(wrap, cond_filled, recv_fin_wrap, recv_fin_lock, prompts, recv_raw_wrap)
     )
     render_thread.daemon = True
     render_thread.start()
     capture_thread = threading.Thread(
         target=capture_thread_func,
-        args=(wrap, cond_filled, send_raw_wrap, send_raw_lock)
+        args=(wrap, cond_filled, send_raw_wrap, send_raw_lock, recv_raw_wrap)
     )
     capture_thread.daemon = True
     capture_thread.start()

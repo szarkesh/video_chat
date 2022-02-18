@@ -8,6 +8,7 @@ from client_wrapper import client_wrapper
 from frame import Frame
 from raw_wrapper import raw_wrapper
 import helper
+import pickle
 
 HDRLEN = 25
 
@@ -79,6 +80,31 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                             cond_filled.release()
                         payload += s.recv(length - len(payload))
                         helper.cprint(str(len(payload)) + " / " + str(length))
+                    if type == 'C':
+                        recv_raw_lock.acquire()
+                        recv_raw_wrap.calibration_frames = pickle.loads(payload)
+                        recv_raw_lock.release()
+                        print("Received Calibration Frames");
+                    elif type == 'A':
+                        recv_raw_lock.acquire()
+                        recv_raw_wrap.calibration_masks = pickle.loads(payload)
+                        recv_raw_lock.release()
+                        print("Received Calibration Masks");
+                    elif type == 'E':
+                        recv_raw_lock.acquire()
+                        recv_raw_wrap.calibration_meshes = pickle.loads(payload)
+                        recv_raw_lock.release()
+                        print("Received Calibration Meshes");
+                    elif type == 'P':
+                        recv_raw_lock.acquire()
+                        recv_raw_wrap.calibration_poses = pickle.loads(payload)
+                        recv_raw_lock.release()
+                        print("Received Calibration Poses");
+                    elif type == 'B':
+                        recv_raw_lock.acquire()
+                        recv_raw_wrap.background_frame = pickle.loads(payload)
+                        recv_raw_lock.release()
+                        print("Received Background Frame");
                     if type == "F":
                         # Received frame
                         frame = Frame(payload, fid, True)

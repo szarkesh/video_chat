@@ -4,6 +4,7 @@ from time import sleep
 from client_wrapper import client_wrapper
 from fin_wrapper import fin_wrapper
 import numpy as np
+import pickle
 
 import helper
 
@@ -30,6 +31,37 @@ def sender_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, s
                 break
             cond_filled.release()
             count = 0
+        send_fin_lock.acquire()
+        if len(send_fin_wrap.calibration_frames) > 0:
+            frames = send_fin_wrap.calibration_frames
+            payload = pickle.dumps(frames, 0)
+            header = ("0C0" + '0000000' + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
+            helper.cprint("sending calibration frames: " + str(len(frames)) + " | len: " + str(len(frames)))
+            helper.datsend(sock, header+payload)
+            data = send_fin_wrap.calibration_meshes
+            payload = pickle.dumps(data, 0)
+            header = ("0E0" + '0000000' + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
+            helper.cprint("sending calibration meshes: " + str(len(data)) + " | len: " + str(len(data)))
+            helper.datsend(sock, header+payload)
+            data = send_fin_wrap.calibration_poses
+            payload = pickle.dumps(data, 0)
+            header = ("0P0" + '0000000' + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
+            helper.cprint("sending calibration poses: " + str(len(data)) + " | len: " + str(len(data)))
+            helper.datsend(sock, header+payload)
+            data = send_fin_wrap.calibration_masks
+            payload = pickle.dumps(data, 0)
+            header = ("0A0" + '0000000' + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
+            helper.cprint("sending calibration masks: " + str(len(data)) + " | len: " + str(len(data)))
+            helper.datsend(sock, header+payload)
+            data = send_fin_wrap.background_frame
+            payload = pickle.dumps(data, 0)
+            header = ("0B0" + '0000000' + '00000' + str(len(payload)).zfill(10)).encode('utf-8')
+            helper.cprint("sending background_frame: " + str(len(data)) + " | len: " + str(len(data)))
+            helper.datsend(sock, header+payload)
+            send_fin_wrap.calibration_frames = []
+            send_fin_lock.release()
+        else:
+            send_fin_lock.release()
         send_fin_lock.acquire()
         if len(send_fin_wrap.framedata) > 0:
             f = send_fin_wrap.framedata.pop(0)

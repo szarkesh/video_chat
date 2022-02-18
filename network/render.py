@@ -1,3 +1,4 @@
+from multiprocessing import Array
 import threading
 from time import sleep, time
 from client_wrapper import client_wrapper
@@ -6,8 +7,9 @@ import cv2
 import numpy as np
 import pickle
 import helper
+from raw_wrapper import raw_wrapper
 
-def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition):
+def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition, prompts, recv_raw_wrap: raw_wrapper):
     print("Creating Window...")
     cond_filled.acquire()
     windname = "video" + str(wrap.targetport)[3]

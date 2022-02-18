@@ -6,3 +6,8 @@ class raw_wrapper(object):
         self.lastGoodFrames = {}
         self.lastGoodFramePoints = {}
         self.headframeid = 0
+        self.calibration_frames = []
+        self.calibration_meshes = []
+        self.calibration_poses = []
+        self.calibration_masks = []
+        self.background_frame = None

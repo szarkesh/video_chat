@@ -2,6 +2,7 @@ import base64
 import threading
 from time import sleep
 from client_wrapper import client_wrapper
+from fin_wrapper import fin_wrapper
 from raw_wrapper import raw_wrapper
 from frame import Frame
 import cv2
@@ -9,7 +10,7 @@ import numpy as np
 import pickle
 import helper
 
-def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, send_raw_wrap: raw_wrapper, send_raw_lock: threading.Condition):
+def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, send_raw_wrap: raw_wrapper, send_raw_lock: threading.Condition, recv_raw_wrap: raw_wrapper, send_fin_wrap: fin_wrapper):
     count = 0
     #cap = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
     cond_filled.acquire()
@@ -36,16 +37,21 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
             print("Can't receive frame (stream end?). Exiting ...")
             break
         
-        # Reduce Frame rate of entire video feed by skipping each nth frame
-        if fid % helper.SKIPN == 0:
-            #print(type(frame))
-            #encoded, buffer = cv2.imencode('.jpg', frame)
-            #print(type(data))
-            #data = base64.b64encode(buffer)
-            data = pickle.dumps(frame, 0)
-            f = Frame(data, fid, True)
-            #print("captured frame ID: " + str(fid) + " ~ " + str(data)[1:5] + " | len: " + str(len(data)))
-            send_raw_lock.acquire()
-            send_raw_wrap.framedata.append(f)
-            send_raw_lock.release()
-        fid += 1
+        if len(send_fin_wrap.calibration_frames) > 0 or (len(recv_raw_wrap.calibration_frames) == 0 or len(recv_raw_wrap.calibration_poses) == 0 or len(recv_raw_wrap.calibration_masks) == 0 or len(recv_raw_wrap.calibration_meshes) == 0 or recv_raw_wrap.background_frame is None):
+                # Waiting on calibration data
+                print("Waiting on calibration...")
+                sleep(0.5)
+        else:
+            # Reduce Frame rate of entire video feed by skipping each nth frame
+            if fid % helper.SKIPN == 0:
+                #print(type(frame))
+                #encoded, buffer = cv2.imencode('.jpg', frame)
+                #print(type(data))
+                #data = base64.b64encode(buffer)
+                data = pickle.dumps(frame, 0)
+                f = Frame(data, fid, True)
+                #print("captured frame ID: " + str(fid) + " ~ " + str(data)[1:5] + " | len: " + str(len(data)))
+                send_raw_lock.acquire()
+                send_raw_wrap.framedata.append(f)
+                send_raw_lock.release()
+            fid += 1
