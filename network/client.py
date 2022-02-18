@@ -182,14 +182,16 @@ def main():
                             while cap.isOpened() and is_calibrating:
                                 ret, frame = cap.read()
                                 frame = image_resize(frame, width=IMAGE_WIDTH_OPTIONS[quality_index])
-                                if background_frame is None:
+                                if send_fin_wrap.background_frame is None:
                                     display_frame = frame.copy()
                                     cv2.putText(display_frame, "Leave the viewport and \n press N to continue.", (100, 100), fontFace=cv2.FONT_HERSHEY_PLAIN,
                                                 fontScale=1.2, color=(255, 255, 255))
                                     cv2.imshow('1', display_frame)
 
                                     if cv2.waitKey(1) & 0xFF == ord('n'):
-                                        background_frame = frame
+                                        send_fin_lock.acquire()
+                                        send_fin_wrap.background_frame = frame
+                                        send_fin_lock.release()
                                 else:
                                     if prompt_index > prompts.__len__():
                                         print("Calibration Complete! Sending...")
