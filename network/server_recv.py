@@ -170,8 +170,8 @@ def client_server_recv_loop(wrap: client_wrapper, cond_filled: threading.Conditi
                     # Logic to spawn threads (timing with unix stamp)
                     wrap.calling = True
                     waiting = False
-                    start(wrap, cond_filled, prompts, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads)
                     cond_filled.release()
+                    start(wrap, cond_filled, prompts, IP, PORT, recv_raw_wrap, recv_raw_lock, recv_fin_wrap, recv_fin_lock, send_raw_wrap, send_raw_lock, send_fin_wrap, send_fin_lock, listen_thread, render_thread, capture_thread, sender_thread, constructor_threads, extractor_threads)
                 elif cmd in ['r', 'reject']:
                     cond_filled.acquire()
                     wrap.waiting = False

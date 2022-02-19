@@ -45,11 +45,12 @@ def extractor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition
                 image = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 if results.face_landmarks:
                     mesh_points=face_utils.get_landmarks_to_np(results.face_landmarks, image.shape[1],image.shape[0], True)
-                if results.pose_landmarks:
-                    body_points = face_utils.get_landmarks_to_np(results.pose_landmarks, image.shape[1],
-                                                                    image.shape[0], True)
+                #if results.pose_landmarks:
+                    #body_points = face_utils.get_landmarks_to_np(results.pose_landmarks, image.shape[1],
+                                                                    #image.shape[0], True)
                 #points, bound_box = getFrameInfo(detector, predictor, frame)
-                ptsframe = Frame(pickle.dumps({mesh: mesh_points, body: body_points}, 0), f.fid, True)
+                #ptsframe = Frame(pickle.dumps({mesh: mesh_points, body: body_points}, 0), f.fid, True)
+                ptsframe = Frame(pickle.dumps(mesh_points, 0), f.fid, True)
                 send_fin_lock.acquire()
                 if f.fid % samplingrate == 0:
                     send_fin_wrap.framedata.append(f)

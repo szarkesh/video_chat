@@ -28,18 +28,18 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
                 return
             cond_filled.release()
             count = 0
-        recv_raw_lock.acquire()
-        framelength = len(recv_raw_wrap.framedata)
-        recv_raw_lock.release()
-        if framelength > 0:
-            recv_raw_lock.acquire()
-            f = recv_raw_wrap.framedata.pop(0)
-            recv_raw_lock.release()
-            recv_fin_lock.acquire()
-            bisect.insort_left(recv_fin_wrap.framedata, f)
-            #recv_fin_wrap.framedata.append(f)
-            helper.cprint("constructed frame: " + str(f.fid))
-            recv_fin_lock.release()
+        #recv_raw_lock.acquire()
+        #framelength = len(recv_raw_wrap.framedata)
+        #recv_raw_lock.release()
+        #if framelength > 0:
+        #    recv_raw_lock.acquire()
+        #    f = recv_raw_wrap.framedata.pop(0)
+        #    recv_raw_lock.release()
+        #    recv_fin_lock.acquire()
+        #    bisect.insort_left(recv_fin_wrap.framedata, f)
+        #    #recv_fin_wrap.framedata.append(f)
+        #    helper.cprint("constructed frame: " + str(f.fid))
+        #    recv_fin_lock.release()
         
         recv_raw_lock.acquire()
         datalength = len(recv_raw_wrap.featuredata)
@@ -56,11 +56,12 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
             #if not pts.fid % samplingrate == 0:
                 # Need to create frame using delaunay triangulation
                 # First, check if last frame is present
-            if pts.data.mesh is not None:
-                calibration_img_idx = get_most_similar_frame_idx(recv_raw_wrap.calibration_meshes, pts.data.mesh)
-                pasted_body = morph.PasteBody(recv_raw_wrap.background_frame, recv_raw_wrap.calibration_frames[0], recv_raw_wrap.calibration_meshes[0], recv_raw_wrap.calibration_masks[0], pts.data.mesh)
+            if pts.data is not None:
+                print(recv_raw_wrap.calibration_meshes)
+                calibration_img_idx = get_most_similar_frame_idx(recv_raw_wrap.calibration_meshes, pts.data)
+                pasted_body = morph.PasteBody(recv_raw_wrap.background_frame, recv_raw_wrap.calibration_frames[0], recv_raw_wrap.calibration_meshes[0], recv_raw_wrap.calibration_masks[0], pts.data)
                 output_image = morph.ImageMorphingTriangulation(
-                        recv_raw_wrap.calibration_frames[calibration_img_idx], recv_raw_wrap.calibration_meshes[calibration_img_idx], pts.data.mesh, 1, pasted_body, True
+                        recv_raw_wrap.calibration_frames[calibration_img_idx], recv_raw_wrap.calibration_meshes[calibration_img_idx], pts.data, 1, pasted_body, True
                 )
                 recv_fin_lock.acquire()
                 recv_fin_wrap.framedata.append(Frame(output_image, pts.fid, False))

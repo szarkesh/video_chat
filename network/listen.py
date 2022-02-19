@@ -90,7 +90,7 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         recv_raw_wrap.calibration_masks = pickle.loads(payload)
                         recv_raw_lock.release()
                         print("Received Calibration Masks");
-                    elif type == 'E':
+                    elif type == 'M':
                         recv_raw_lock.acquire()
                         recv_raw_wrap.calibration_meshes = pickle.loads(payload)
                         recv_raw_lock.release()
@@ -105,7 +105,7 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         recv_raw_wrap.background_frame = pickle.loads(payload)
                         recv_raw_lock.release()
                         print("Received Background Frame");
-                    if type == "F":
+                    elif type == "F":
                         # Received frame
                         frame = Frame(payload, fid, True)
                         recv_raw_lock.acquire()
@@ -118,8 +118,8 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         frame = Frame(payload, fid, True)
                         recv_raw_lock.acquire()
                         recv_raw_wrap.featuredata.append(frame)
-                        if fid % samplingrate:
-                            recv_raw_wrap.lastGoodFramePoints[str(fid)] = frame
+                        #if fid % samplingrate:
+                        #    recv_raw_wrap.lastGoodFramePoints[str(fid)] = frame
                         recv_raw_lock.release()
                         helper.cprint("listened feature data: " + str(frame.fid))
                     elif type == "E":

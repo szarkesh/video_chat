@@ -52,7 +52,7 @@ Each message has a header consisting of 4 characters:
 
 #### Client - Client Communication
 - Operation (1 character): 0 for request, 1 for response
-- Message Type (1 character): 'C' for starting calibration frame, 'A' for starting calibration frame masks, 'E' for startin calibration frame meshes, 'P' for starting calibration poses, 'B' for background frame,  'F' for calibration frame, 'D' for feature data of frame, 'E' to end call
+- Message Type (1 character): 'C' for starting calibration frame, 'A' for starting calibration frame masks, 'M' for startin calibration frame meshes, 'P' for starting calibration poses, 'B' for background frame,  'F' for calibration frame, 'D' for feature data of frame, 'E' to end call
 - Status (1 character): 0 for OK, 1 for Failure (TODO: Add more error types)
 - Frame Number (7 characters): Frame Number/ID in 7 character format e.g. Frame ID 1 - '0000001', for 'E' type '0000000'
 - Chunk Number (5 characters): Chunk Number for data of frame specified by frame number in 5 character format e.g. chunk number 1 - '00001', for 'E' type '00000'
