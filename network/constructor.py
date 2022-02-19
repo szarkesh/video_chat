@@ -1,5 +1,5 @@
 import threading
-from time import SLEEP
+from time import sleep
 from frame import Frame
 from client_wrapper import client_wrapper
 from util import get_most_similar_frame_idx
@@ -10,7 +10,7 @@ import sys
 sys.path.append('../processing')
 import morph
 import bisect
-from client import FLAG_USE_ALL_LANDMARKS
+#from helper import FLAG_USE_ALL_LANDMARKS
 
 def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, recv_raw_wrap: raw_wrapper, recv_raw_lock: threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition):
     count = 0
@@ -60,7 +60,7 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
                 calibration_img_idx = get_most_similar_frame_idx(recv_raw_wrap.calibration_meshes, pts.data.mesh)
                 pasted_body = morph.PasteBody(recv_raw_wrap.background_frame, recv_raw_wrap.calibration_frames[0], recv_raw_wrap.calibration_meshes[0], recv_raw_wrap.calibration_masks[0], pts.data.mesh)
                 output_image = morph.ImageMorphingTriangulation(
-                        recv_raw_wrap.calibration_frames[calibration_img_idx], recv_raw_wrap.calibration_meshes[calibration_img_idx], pts.data.mesh, 1, pasted_body, FLAG_USE_ALL_LANDMARKS
+                        recv_raw_wrap.calibration_frames[calibration_img_idx], recv_raw_wrap.calibration_meshes[calibration_img_idx], pts.data.mesh, 1, pasted_body, True
                 )
                 recv_fin_lock.acquire()
                 recv_fin_wrap.framedata.append(Frame(output_image, pts.fid, False))

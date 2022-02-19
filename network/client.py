@@ -1,6 +1,8 @@
 from concurrent.futures import thread
 import socket
 import sys
+
+from helper import BODY_THRESH, FLAG_USE_ALL_LANDMARKS, IMAGE_WIDTH_OPTIONS, quality_index
 sys.path.append('../processing')
 import face_utils
 import threading
@@ -30,13 +32,7 @@ mp_holistic = mp.solutions.holistic
 QUEUE_LENGTH = 10
 PORT = 3000
 IP = "localhost"
-TARGET_FRAME_RATE = 2
-BEGIN_IMAGE_WIDTH = 720
-IMAGE_WIDTH_OPTIONS = [240, 360, 720]
-FLAG_AUTO_RESIZE = False
-FLAG_USE_ALL_LANDMARKS = False
-BODY_THRESH = 0.4
-quality_index = IMAGE_WIDTH_OPTIONS.index(BEGIN_IMAGE_WIDTH)
+
 prompts = ['Show a neutral face'] #,'Now show a smile', 'Now show us your eyes closed','Now show your mouth half open', 'Now open your mouth more!', 'Now do a half smile', 'Now purse your lips']
 
 if (quality_index == -1):
@@ -177,7 +173,7 @@ def main():
                         cond_filled.acquire()
                         is_calibrating = True
                         prompt_index = 0
-                        cap = cv2.VideoCapture(0)
+                        cap = cv2.VideoCapture('./rayvideo.mp4')
                         with mp_holistic.Holistic(static_image_mode=True, model_complexity=1, enable_segmentation=True, refine_face_landmarks=True) as holistic_detector:
                             while cap.isOpened() and is_calibrating:
                                 ret, frame = cap.read()
@@ -221,9 +217,9 @@ def main():
                                         if results.face_landmarks:
                                             prompt_index += 1
                                             send_fin_wrap.calibration_frames.append(image)
-                                            face_pts = face_utils.get_landmarks_to_np(results.face_landmarks, image.shape[1], image.shape[0], FLAG_USE_ALL_LANDMARKS)
+                                            face_pts = face_utils.get_landmarks_to_np(results.face_landmarks, image.shape[1], image.shape[0], True)
                                             body_pts = face_utils.get_landmarks_to_np(results.pose_landmarks, image.shape[1],
-                                                                                    image.shape[0], FLAG_USE_ALL_LANDMARKS)
+                                                                                    image.shape[0], True)
                                             print(body_pts)
                                             send_fin_wrap.calibration_masks.append(thresh_mask)
                                             send_fin_wrap.calibration_meshes.append(face_pts)

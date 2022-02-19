@@ -14,7 +14,8 @@ def capture_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, 
     count = 0
     #cap = cv2.VideoCapture(0 + cv2.CAP_DSHOW)
     cond_filled.acquire()
-    cap = cv2.VideoCapture("../processing/videos/" + ("lower.mp4" if int(wrap.targetport) == 3001 else "lowercopy.mp4"))
+    cap = cv2.VideoCapture('./raylive.mp4')
+    #cap = cv2.VideoCapture("../processing/videos/" + ("lower.mp4" if int(wrap.targetport) == 3001 else "lowercopy.mp4"))
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, wrap.resolution)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 680 if wrap.resolution == 480 else (wrap.resolution * 16 / 9))
     cond_filled.release()
