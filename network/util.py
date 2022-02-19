@@ -1,3 +1,6 @@
+import sys
+sys.path.append('../processing')
+import face_utils
 import cv2
 
 def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
@@ -30,3 +33,7 @@ def image_resize(image, width=None, height=None, inter=cv2.INTER_AREA):
 
     # return the resized image
     return resized
+
+def get_most_similar_frame_idx(meshes, curr_mesh):
+    similarities = [face_utils.mesh_similarity(mesh, curr_mesh) for mesh in meshes]
+    return max((x, i) for i, x in enumerate(similarities))[1] # position of highest similarity

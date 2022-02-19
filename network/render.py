@@ -37,19 +37,21 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
         recv_fin_lock.acquire()
         framelength = len(recv_fin_wrap.framedata)
         helper.cprint(str(framelength) + " frames ready")
-        datalength = len(recv_fin_wrap.featuredata)
-        helper.cprint(str(datalength) + " data frames ready")
+        #datalength = len(recv_fin_wrap.featuredata)
+        #helper.cprint(str(datalength) + " data frames ready")
         recv_fin_lock.release()
-        if framelength > 0 and datalength > 0:
+        #if framelength > 0 and datalength > 0:
+        if framelength > 0:
             recv_fin_lock.acquire()            
             f = recv_fin_wrap.framedata.pop(0)
-            pts = recv_fin_wrap.featuredata.pop(0)
+            #pts = recv_fin_wrap.featuredata.pop(0)
             recv_fin_lock.release()
             helper.cprint("Rendering FID: " + str(f.fid))
             #nparr = np.fromstring(f.data, dtype=np.uint8)
             #frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            frame = pickle.loads(f.data)
-            points = pickle.loads(pts.data)
+            #frame = pickle.loads(f.data)
+            frame = f.data
+            #points = pickle.loads(pts.data)
             # Could add lengths of the 4 buffers as the status dashboard
             recv_fin_lock.acquire()
             rdy = str(len(recv_fin_wrap.framedata))
@@ -61,8 +63,8 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
                 start_time = time()
                 started = True
             image = cv2.putText(frame, "FID: " + str(f.fid) + " FPS: " + fps + " TIME: " + str("{:.2f}".format(time() - start_time)) + " RDY: " + str(rdy), (0, 20), cv2.FONT_HERSHEY_SIMPLEX, 0.3, (255, 0, 0), 1, cv2.LINE_AA)
-            for point in points:
-                cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
+            #for point in points:
+            #    cv2.circle(frame, tuple(point), 2, color=(0, 0, 255), thickness=-1)
             cv2.imshow(windname, image)
             #cv2.waitKey(0)
             cv2.waitKey(50)
