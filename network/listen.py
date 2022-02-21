@@ -115,7 +115,8 @@ def listen_thread_loop(wrap: client_wrapper, cond_filled: threading.Condition, r
                         helper.cprint("listened frame: " + str(frame.fid))
                     elif type == "D":
                         # Received feature data
-                        frame = Frame(payload, fid, True)
+                        mesh = pickle.loads(payload)
+                        frame = Frame(mesh, fid, True)
                         recv_raw_lock.acquire()
                         recv_raw_wrap.featuredata.append(frame)
                         #if fid % samplingrate:

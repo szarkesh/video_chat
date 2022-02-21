@@ -10,6 +10,7 @@ import sys
 sys.path.append('../processing')
 import morph
 import bisect
+import pickle
 #from helper import FLAG_USE_ALL_LANDMARKS
 
 def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Condition, recv_raw_wrap: raw_wrapper, recv_raw_lock: threading.Condition, recv_fin_wrap: fin_wrapper, recv_fin_lock: threading.Condition):
@@ -56,12 +57,24 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
             #if not pts.fid % samplingrate == 0:
                 # Need to create frame using delaunay triangulation
                 # First, check if last frame is present
-            if pts.data is not None:
+            curr_mesh = pts.data
+            first = True
+            if pts.data is not None and first:
+                first = False
                 print(recv_raw_wrap.calibration_meshes)
-                calibration_img_idx = get_most_similar_frame_idx(recv_raw_wrap.calibration_meshes, pts.data)
-                pasted_body = morph.PasteBody(recv_raw_wrap.background_frame, recv_raw_wrap.calibration_frames[0], recv_raw_wrap.calibration_meshes[0], recv_raw_wrap.calibration_masks[0], pts.data)
+                calibration_img_idx = get_most_similar_frame_idx(recv_raw_wrap.calibration_meshes, curr_mesh)
+                pasted_body = morph.PasteBody(recv_raw_wrap.background_frame, recv_raw_wrap.calibration_frames[0], recv_raw_wrap.calibration_meshes[0], recv_raw_wrap.calibration_masks[0], curr_mesh)
+                print("Calibration Img IDX: " + str(calibration_img_idx))
+                print("Calibration Frame: ")
+                print(recv_raw_wrap.calibration_frames[calibration_img_idx])
+                print("--------------------------------------------------")
+                print("Calibration mesh:")
+                print(recv_raw_wrap.calibration_meshes[calibration_img_idx])
+                print("--------------------------------------------------")
+                print("Current Mesh: ")
+                print(curr_mesh)
                 output_image = morph.ImageMorphingTriangulation(
-                        recv_raw_wrap.calibration_frames[calibration_img_idx], recv_raw_wrap.calibration_meshes[calibration_img_idx], pts.data, 1, pasted_body, True
+                        recv_raw_wrap.calibration_frames[calibration_img_idx], recv_raw_wrap.calibration_meshes[calibration_img_idx], curr_mesh, 1, pasted_body, True
                 )
                 recv_fin_lock.acquire()
                 recv_fin_wrap.framedata.append(Frame(output_image, pts.fid, False))
