@@ -34,22 +34,13 @@ def render_thread_func(wrap: client_wrapper, cond_filled:  threading.Condition, 
                 return
             cond_filled.release()
             count = 0
-        recv_fin_lock.acquire()
         framelength = len(recv_fin_wrap.framedata)
         helper.cprint(str(framelength) + " frames ready")
-        #datalength = len(recv_fin_wrap.featuredata)
-        #helper.cprint(str(datalength) + " data frames ready")
-        recv_fin_lock.release()
-        #if framelength > 0 and datalength > 0:
         if framelength > 0:
             recv_fin_lock.acquire()            
             f = recv_fin_wrap.framedata.pop(0)
-            #pts = recv_fin_wrap.featuredata.pop(0)
             recv_fin_lock.release()
             helper.cprint("Rendering FID: " + str(f.fid))
-            #nparr = np.fromstring(f.data, dtype=np.uint8)
-            #frame = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-            #frame = pickle.loads(f.data)
             frame = f.data
             #points = pickle.loads(pts.data)
             # Could add lengths of the 4 buffers as the status dashboard

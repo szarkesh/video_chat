@@ -29,53 +29,40 @@ def constructor_thread_func(wrap: client_wrapper, cond_filled: threading.Conditi
                 return
             cond_filled.release()
             count = 0
-        #recv_raw_lock.acquire()
-        #framelength = len(recv_raw_wrap.framedata)
-        #recv_raw_lock.release()
-        #if framelength > 0:
-        #    recv_raw_lock.acquire()
-        #    f = recv_raw_wrap.framedata.pop(0)
-        #    recv_raw_lock.release()
-        #    recv_fin_lock.acquire()
-        #    bisect.insort_left(recv_fin_wrap.framedata, f)
-        #    #recv_fin_wrap.framedata.append(f)
-        #    helper.cprint("constructed frame: " + str(f.fid))
-        #    recv_fin_lock.release()
-        
-        recv_raw_lock.acquire()
         datalength = len(recv_raw_wrap.featuredata)
-        recv_raw_lock.release()
+        # print("Data Length: " + str(datalength))
         if datalength > 0:
             recv_raw_lock.acquire()
             pts = recv_raw_wrap.featuredata.pop(0)
             recv_raw_lock.release()
-            recv_fin_lock.acquire()
-            bisect.insort_left(recv_fin_wrap.featuredata, pts)
+            #recv_fin_lock.acquire()
+            #bisect.insort_left(recv_fin_wrap.featuredata, pts)
             #recv_fin_wrap.featuredata.append(pts)
-            helper.cprint("constructed data: " + str(pts.fid))
-            recv_fin_lock.release()
+            #recv_fin_lock.release()
             #if not pts.fid % samplingrate == 0:
                 # Need to create frame using delaunay triangulation
                 # First, check if last frame is present
             curr_mesh = pts.data
-            first = True
-            if pts.data is not None and first:
-                first = False
-                print(recv_raw_wrap.calibration_meshes)
+            if pts.data is not None:
+                #print(recv_raw_wrap.calibration_meshes)
                 calibration_img_idx = get_most_similar_frame_idx(recv_raw_wrap.calibration_meshes, curr_mesh)
                 pasted_body = morph.PasteBody(recv_raw_wrap.background_frame, recv_raw_wrap.calibration_frames[0], recv_raw_wrap.calibration_meshes[0], recv_raw_wrap.calibration_masks[0], curr_mesh)
-                print("Calibration Img IDX: " + str(calibration_img_idx))
-                print("Calibration Frame: ")
-                print(recv_raw_wrap.calibration_frames[calibration_img_idx])
-                print("--------------------------------------------------")
-                print("Calibration mesh:")
-                print(recv_raw_wrap.calibration_meshes[calibration_img_idx])
-                print("--------------------------------------------------")
-                print("Current Mesh: ")
-                print(curr_mesh)
+                #print("Calibration Img IDX: " + str(calibration_img_idx))
+                #print("Calibration Frame: ")
+                #print(type(recv_raw_wrap.calibration_frames[calibration_img_idx]))
+                #print(recv_raw_wrap.calibration_frames[calibration_img_idx].shape)
+                #print("--------------------------------------------------")
+                #print("Calibration mesh:")
+                #print(type(recv_raw_wrap.calibration_meshes[calibration_img_idx]))
+                # print(recv_raw_wrap.calibration_meshes[calibration_img_idx].shape)
+                # print("--------------------------------------------------")
+                # print("Current Mesh: ")
+                # print(type(curr_mesh))
+                # print(curr_mesh.shape)
                 output_image = morph.ImageMorphingTriangulation(
                         recv_raw_wrap.calibration_frames[calibration_img_idx], recv_raw_wrap.calibration_meshes[calibration_img_idx], curr_mesh, 1, pasted_body, True
                 )
                 recv_fin_lock.acquire()
                 recv_fin_wrap.framedata.append(Frame(output_image, pts.fid, False))
                 recv_fin_lock.release()
+                print("constructed data: " + str(pts.fid) + " | remaining: " + str(len(recv_fin_wrap.featuredata)))

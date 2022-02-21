@@ -107,7 +107,7 @@ def main():
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # may need to use socket.gethostname() instead of localhost once deploy to ec2
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    name = 'localhost'#"localhost" if socket.gethostname() == "cis553" else socket.gethostname()
+    name = '0.0.0.0'#name = 'localhost'#"localhost" if socket.gethostname() == "cis553" else socket.gethostname()
     s.bind((name, port))
     s.listen(QUEUE_LENGTH)
     server_main_thread = threading.Thread(target=server_thread, args=(s, cond_filled, threads))

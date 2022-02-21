@@ -23,7 +23,7 @@ mp_holistic = mp.solutions.holistic
 
 
 
-SLEEP = 0.002
+SLEEP = 0.05
 PRINT = False
 CHECK = 1000
 SKIPN = 2
@@ -89,7 +89,7 @@ def start(wrap, cond_filled, prompts, IP, PORT, recv_raw_wrap, recv_raw_lock, re
     with mp_holistic.Holistic(static_image_mode=True, model_complexity=1, enable_segmentation=True, refine_face_landmarks=True) as holistic_detector:
         while cap.isOpened() and is_calibrating:
             ret, frame = cap.read()
-            frame = image_resize(frame, width=IMAGE_WIDTH_OPTIONS[quality_index])
+            frame = image_resize(frame, width=720)
             if send_fin_wrap.background_frame is None:
                 display_frame = frame.copy()
                 cv2.putText(display_frame, "Leave the viewport and \n press N to continue.", (100, 100), fontFace=cv2.FONT_HERSHEY_PLAIN,

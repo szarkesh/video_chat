@@ -1,3 +1,4 @@
+from cv2 import transform
 import numpy as np
 from scipy.spatial import Delaunay
 import cv2
@@ -185,7 +186,11 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
         full_im1_pts = full_im1_pts[face_utils.LANDMARK_SUBSET]
         full_im2_pts = full_im2_pts[face_utils.LANDMARK_SUBSET]
     #im1_pts = np.subtract(full_im1_pts, [im1bounds[0][0],im1bounds[1][0]])
-
+    # print("Full Image Points 1-2:")
+    # print(type(full_im1_pts), full_im1_pts.shape)
+    # print(type(full_im2_pts), full_im2_pts.shape)
+    # print("Full Image 1:")
+    
     #M, mask = cv2.findHomography(full_im2_pts, im1_pts)
     #im2_pts = cv2.perspectiveTransform(np.array([full_im2_pts], np.float32), M)[0].astype(int)
 
@@ -194,15 +199,21 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
     M, mask = cv2.findHomography(full_im1_pts, full_im2_pts)
     transformed_im1_pts = cv2.perspectiveTransform(np.array([full_im1_pts], np.float32), M)[0].astype(int)
     transformed_im1 = cv2.warpPerspective(full_im1, M, (full_im1.shape[1], full_im1.shape[0]))
-
+    # print("Transformed Iamges")
+    # print(type(transformed_im1), transformed_im1.shape)
+    # print(type(transformed_im1_pts), transformed_im1_pts.shape)
     bounds = [(min(full_im2_pts[:,0]), max(full_im2_pts[:,0])), (min(full_im2_pts[:,1]), max(full_im2_pts[:,1]))]
-
+    # print(bounds)
 
     cropped_im2_pts = np.subtract(full_im2_pts, [bounds[0][0], bounds[1][0]])
     cropped_im1 = transformed_im1[bounds[1][0]:bounds[1][1],bounds[0][0]:bounds[0][1]]
-
+    
     cropped_im1_pts = np.subtract(transformed_im1_pts, [bounds[0][0], bounds[1][0]])
     # Compute the H,W of the images (same size)
+    # print("Cropped Images")
+    # print(type(cropped_im1), cropped_im1.shape)
+    # print(type(cropped_im1_pts), cropped_im1_pts.shape)
+    # print(type(cropped_im2_pts), cropped_im2_pts)
     cropped_im1_pts_with_corners = np.vstack((cropped_im1_pts, np.asarray([[0,0], [0, cropped_im1.shape[0]], [cropped_im1.shape[1], 0], [cropped_im1.shape[1], cropped_im1.shape[0]]])))
     cropped_im2_pts_with_corners = np.vstack((cropped_im2_pts, np.asarray([[0,0], [0, cropped_im1.shape[0]], [cropped_im1.shape[1], 0], [cropped_im1.shape[1], cropped_im1.shape[0]]])))
 
@@ -226,7 +237,7 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
         ABC_Inter_inv_set[ii, :, :] = np.linalg.inv(matrixABC(intermediate_coords, element))
         ABC_im1_set[ii, :, :] = matrixABC(cropped_im1_pts_with_corners, element)
         #ABC_im2_set[ii, :, :] = matrixABC(im2_pts, element)
-
+    #print(size_H, size_W, delaunay_triangulation, ABC_Inter_inv_set, ABC_im1_set, cropped_im1)
     warp_im1 = generate_warp(size_H, size_W, delaunay_triangulation, ABC_Inter_inv_set, ABC_im1_set, cropped_im1)
 
     dissolved_full = background_frame.copy()
@@ -234,7 +245,7 @@ def ImageMorphingTriangulation(full_im1, full_im1_pts, full_im2_pts, warp_frac, 
     convex_hull = [convex_hull.reshape(-1,2).astype(int)]
     mask = helpers_cv2.mask_from_contours(cropped_im1, convex_hull)
     center = (int((bounds[0][0] + bounds[0][1]) / 2), int((bounds[1][0] + bounds[1][1]) / 2))
-    print(center)
+    #print(center)
     dissolved_full = cv2.seamlessClone(warp_im1, dissolved_full, mask, center, cv2.NORMAL_CLONE)
     #dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]] = np.where(mask, warp_im1, dissolved_full[bounds[1][0]:bounds[1][1], bounds[0][0]:bounds[0][1]])
     return dissolved_full

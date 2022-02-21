@@ -2,7 +2,6 @@ import pickle
 import time
 import morph
 import cv2
-import dlib
 import cProfile
 import re
 import numpy as np
@@ -65,8 +64,8 @@ def main():
     srcFile = "example.mov"
 
     #cap = cv2.VideoCapture("videos/" + srcFile)
-    cap = cv2.VideoCapture(0)
-
+    #cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('../network/rayvideo.mp4')
     frameIdx = 0
     samplingRate = 60  # sample every x frames
     TARGET_FRAME_RATE = 2
@@ -106,7 +105,7 @@ def main():
 
     is_calibrating = True
     prompt_index = 0
-
+    first = True
     t = time.time()
     with mp_holistic.Holistic(static_image_mode=True, model_complexity=1, enable_segmentation=True, refine_face_landmarks=True) as holistic_detector:
         while cap.isOpened():
@@ -187,10 +186,21 @@ def main():
                     else:
                         print('results no workie')
                         continue
-
                     if mesh_points is not None:
                         calibration_img_idx = get_most_similar_frame_idx(calibration_meshes, mesh_points)
                         pasted_body = morph.PasteBody(background_frame, calibration_frames[0], calibration_meshes[0], calibration_masks[0], mesh_points)
+                        # print("Calibration Img IDX: " + str(calibration_img_idx))
+                        # print("Calibration Frame: ")
+                        # print(type(calibration_frames[calibration_img_idx]))
+                        # print(calibration_frames[calibration_img_idx].shape)
+                        # print("--------------------------------------------------")
+                        # print("Calibration mesh:")
+                        # print(type(calibration_meshes[calibration_img_idx]))
+                        # print(calibration_meshes[calibration_img_idx].shape)
+                        # print("--------------------------------------------------")
+                        # print("Current Mesh: ")
+                        # print(type(mesh_points))
+                        # print(mesh_points)
                         output_image = morph.ImageMorphingTriangulation(
                                 calibration_frames[calibration_img_idx], calibration_meshes[calibration_img_idx], mesh_points, 1, pasted_body, FLAG_USE_ALL_LANDMARKS
                         )
